@@ -171,6 +171,7 @@ http://localhost:3000
 * [x] Authentification (Service Clients)
 * [ ] Commande de plats (Service Commandes)
 * [ ] Suivi en cuisine (Service Cuisine)
+* [ ] Gestion des livraisons (Service Livraison)
 * [ ] Intégration front
 * [ ] Déploiement (Railway, Vercel…)
 * [ ] CI/CD GitHub Actions
