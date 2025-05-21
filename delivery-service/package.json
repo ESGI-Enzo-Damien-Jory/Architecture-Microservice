@@ -54,6 +54,7 @@
     "@adonisjs/core": "^6.18.0",
     "@adonisjs/cors": "^2.2.1",
     "@adonisjs/lucid": "^21.6.1",
+    "@supabase/supabase-js": "^2.49.7",
     "@vinejs/vine": "^3.0.1",
     "reflect-metadata": "^0.2.2"
   },
