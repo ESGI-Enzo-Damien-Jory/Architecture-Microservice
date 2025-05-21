@@ -22,6 +22,7 @@ Requete inter services: HTTP via dns docker
 ### Service Clients (@Jaden38)
 
 Imposés par lead:
+- Framework : AdonisJS (v6)
 - JWT
 - Interop JSON
 - Supabase
@@ -54,6 +55,21 @@ Exposés:
 ```
 GET /kitchen/orders (toutes les commandes à traiter)
 PATCH /kitchen/orders/:id (changer statut : preparing, ready)
+```
+
+### Service Livraison (@Jaden38)
+
+- Récupération des commandes prêtes à être livrées
+- Attribution des commandes à un livreur
+- Mise à jour du statut de livraison (reserved, picked_up, delivered)
+- Authentification des livreurs (via JWT Supabase)
+
+Endpoints exposés :
+```
+GET    /deliveries/available          # Voir les livraisons à prendre
+PATCH  /deliveries/:id/reserve        # Réserver une livraison
+PATCH  /deliveries/:id/pickup         # Marquer comme prise en charge
+PATCH  /deliveries/:id/deliver        # Marquer comme livrée
 ```
 
 ### Frontend (@everyone)
@@ -151,8 +167,8 @@ http://localhost:3000
 ## 📅 Roadmap simplifiée
 
 * [x] Choix des technos
-* [ ] Mise en place des squelettes de services
-* [ ] Authentification (Service Clients)
+* [x] Mise en place des squelettes de services
+* [x] Authentification (Service Clients)
 * [ ] Commande de plats (Service Commandes)
 * [ ] Suivi en cuisine (Service Cuisine)
 * [ ] Intégration front
