@@ -1,31 +1,47 @@
 services:
-  service-clients:
+  client-service:
     build: ./client-service
     ports:
       - "8080:3333"
     environment:
-      - TZ=${SERVICE_CLIENT_TZ}
-      - PORT=${SERVICE_CLIENT_PORT}
-      - HOST=${SERVICE_CLIENT_HOST}
-      - LOG_LEVEL=${SERVICE_CLIENT_LOG_LEVEL}
-      - APP_KEY=${SERVICE_CLIENT_APP_KEY}
-      - NODE_ENV=${SERVICE_CLIENT_NODE_ENV}
+      - TZ=${CLIENT_SERVICE_TZ}
+      - PORT=${CLIENT_SERVICE_PORT}
+      - HOST=${CLIENT_SERVICE_HOST}
+      - LOG_LEVEL=${CLIENT_SERVICE_LOG_LEVEL}
+      - APP_KEY=${CLIENT_SERVICE_APP_KEY}
+      - NODE_ENV=${CLIENT_SERVICE_NODE_ENV}
       - DB_URL=${DB_URL}
       - JWT_SECRET=${JWT_SECRET}
     depends_on: []
 
-  # service-commandes:
+  delivery-service:
+    build: ./delivery-service
+    ports:
+      - "8083:3333"
+    environment:
+      - TZ=${DELIVERY_SERVICE_TZ}
+      - PORT=${DELIVERY_SERVICE_PORT}
+      - HOST=${DELIVERY_SERVICE_HOST}
+      - LOG_LEVEL=${DELIVERY_SERVICE_LOG_LEVEL}
+      - APP_KEY=${DELIVERY_SERVICE_APP_KEY}
+      - NODE_ENV=${DELIVERY_SERVICE_NODE_ENV}
+      - DB_URL=${DB_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on: []
+
+
+  # order-service:
   #   build: ./command-service
   #   ports:
-  #     - "8081:8081"
+  #     - "8082:8081"
   #   environment:
   #     - DB_URL=${DB_URL}
   #   depends_on: []
 
-  # service-cuisine:
+  # kitchen-service:
   #   build: ./kitchen-service
   #   ports:
-  #     - "8082:8082"
+  #     - "8083:8082"
   #   environment:
   #     - DB_URL=${DB_URL}
   #   depends_on: []
