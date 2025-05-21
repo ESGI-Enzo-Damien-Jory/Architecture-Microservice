@@ -1,27 +1,31 @@
-version: '3.9'
-
 services:
   service-clients:
     build: ./client-service
     ports:
-      - "8080:8080"
+      - "8080:3333"
     environment:
+      - TZ=${SERVICE_CLIENT_TZ}
+      - PORT=${SERVICE_CLIENT_PORT}
+      - HOST=${SERVICE_CLIENT_HOST}
+      - LOG_LEVEL=${SERVICE_CLIENT_LOG_LEVEL}
+      - APP_KEY=${SERVICE_CLIENT_APP_KEY}
+      - NODE_ENV=${SERVICE_CLIENT_NODE_ENV}
       - DB_URL=${DB_URL}
       - JWT_SECRET=${JWT_SECRET}
     depends_on: []
 
-  service-commandes:
-    build: ./command-service
-    ports:
-      - "8081:8081"
-    environment:
-      - DB_URL=${DB_URL}
-    depends_on: []
+  # service-commandes:
+  #   build: ./command-service
+  #   ports:
+  #     - "8081:8081"
+  #   environment:
+  #     - DB_URL=${DB_URL}
+  #   depends_on: []
 
-  service-cuisine:
-    build: ./kitchen-service
-    ports:
-      - "8082:8082"
-    environment:
-      - DB_URL=${DB_URL}
-    depends_on: []
+  # service-cuisine:
+  #   build: ./kitchen-service
+  #   ports:
+  #     - "8082:8082"
+  #   environment:
+  #     - DB_URL=${DB_URL}
+  #   depends_on: []
