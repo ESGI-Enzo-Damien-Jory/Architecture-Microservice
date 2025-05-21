@@ -11,6 +11,7 @@
 import router from '@adonisjs/core/services/router'
 import server from '@adonisjs/core/services/server'
 
+
 /**
  * The error handler is used to convert an exception
  * to a HTTP response.
@@ -38,4 +39,6 @@ router.use([() => import('@adonisjs/core/bodyparser_middleware')])
  * Named middleware collection must be explicitly assigned to
  * the routes or the routes group.
  */
-export const middleware = router.named({})
+export const middleware = router.named({
+  supabaseAuth: () => import('#middleware/supabase_auth_middleware')
+})
