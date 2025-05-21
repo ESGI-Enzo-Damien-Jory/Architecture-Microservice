@@ -8,9 +8,17 @@
 */
 
 import router from '@adonisjs/core/services/router'
-import DeliveriesController from '#controllers/deliveries_controller'
 import { middleware } from '#start/kernel'
 
+// Lazy-loaded controllers
+const DeliveriesController = () => import('#controllers/deliveries_controller')
+const HealthController = () => import('#controllers/health_controller')
+
+/*
+|--------------------------------------------------------------------------
+| Deliveries Routes
+|--------------------------------------------------------------------------
+*/
 router
   .group(() => {
     router.get('/available', [DeliveriesController, 'available'])
@@ -20,3 +28,14 @@ router
   })
   .prefix('/deliveries')
   .use(middleware.supabaseAuth())
+
+/*
+|--------------------------------------------------------------------------
+| Health Routes
+|--------------------------------------------------------------------------
+*/
+router
+  .group(() => {
+    router.get('health', [HealthController, 'check'])
+  })
+  .prefix('/deliveries')
