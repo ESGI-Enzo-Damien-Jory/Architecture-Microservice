@@ -1,0 +1,72 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13.1-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: supersecret
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  postgres_auth:
+    image: postgres:16
+    container_name: postgres_auth
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_auth_data:/var/lib/postgresql/data
+
+  postgres_command:
+    image: postgres:16
+    container_name: postgres_command
+    environment:
+      POSTGRES_DB: command
+      POSTGRES_USER: command_user
+      POSTGRES_PASSWORD: command_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_command_data:/var/lib/postgresql/data
+
+  auth:
+    build: ./auth
+    volumes:
+      - ./secrets:/secrets:ro
+    environment:
+      - PRIVATE_KEY_PATH=/secrets/private.pem
+      - PUBLIC_KEY_PATH=/secrets/public.pem
+      - DATABASE_URL=postgresql://auth_user:auth_pass@postgres_auth:5432/auth
+    depends_on:
+      - postgres_auth
+    ports:
+      - "5001:5000"
+
+  command:
+    build: ./command
+    volumes:
+      - ./secrets:/secrets:ro
+    environment:
+      - PUBLIC_KEY_PATH=/secrets/public.pem
+      - DATABASE_URL=postgresql://command_user:command_pass@postgres_command:5432/command
+    depends_on:
+      - postgres_command
+      - rabbitmq
+    ports:
+      - "5002:5000"
+
+volumes:
+  rabbitmq_data:
+  pg_auth_data:
+  pg_command_data:
