@@ -11,7 +11,98 @@
 			"name": "Auth HealthCheck",
 			"request": {
 				"method": "GET",
-				"header": []
+				"header": [],
+				"url": {
+					"raw": "localhost:5001/health",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Auth Signup",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"foo@mail.com\",\r\n    \"full_name\": \"Foo Bar\",\r\n    \"password\": \"pass123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:5001/signup",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"signup"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Auth Login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"foo@mail.com\",\r\n    \"password\": \"pass123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:5001/login",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Auth Refresh Token",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"refresh_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTExMzk0OTQsImlhdCI6MTc1MDUzNDY5NCwicm9sZSI6ImNsaWVudCIsInN1YiI6MX0.javppkbOsUN210QfGZPupXOvP4-qFfdCb7ApDcK4uDd0yt5fNDiIHaiEiUwSPnA_UMiHjp0E-hn2xImgpnsxAD7SIJgDNZkJ6Sd_P8h44QjNBhjXlvqBbYMY9x-8Mn3DcEaEw-CqrOOGce7Ys4z7_QMnB6ieQLYG6w1GQLaCC_roMs42-EZ49j9W0svagNMM-tRNF3300QtRdmfbD0jiScM6ue3xbMjcVkunGG5lC9mllXNkzmayum-pQI5YxsFw1Tiasw8bY9f2SV6SI8AUSijmZ_fUHTWh4bAwnojM36U1i4o8Et5QwH4NiWqztIMXy-VAi4G2BqRkWXsqW5iGCA\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:5001/refresh",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"refresh"
+					]
+				}
 			},
 			"response": []
 		},
