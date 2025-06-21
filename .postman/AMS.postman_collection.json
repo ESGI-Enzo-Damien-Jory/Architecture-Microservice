@@ -1,0 +1,37 @@
+{
+	"info": {
+		"_postman_id": "39451afc-324e-46d2-b1c8-d8e102534969",
+		"name": "AMS",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "45155023",
+		"_collection_link": "https://enzohugonnier.postman.co/workspace/Enzo-Hugonnier's-Workspace~18a756a1-5287-4d09-83fc-6a952e70ba60/collection/45155023-39451afc-324e-46d2-b1c8-d8e102534969?action=share&source=collection_link&creator=45155023"
+	},
+	"item": [
+		{
+			"name": "Auth HealthCheck",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Command HealthCheck",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:5002/health",
+					"host": [
+						"localhost"
+					],
+					"port": "5002",
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
