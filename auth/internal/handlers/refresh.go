@@ -5,17 +5,18 @@ import (
     "encoding/json"
     "log"
     "net/http"
-	"time"
+    "time"
 
     "auth/internal/jwt"
     "auth/internal/models"
 )
 
+// RefreshHandler handles issuing a new access token given a valid refresh token.
 func RefreshHandler(db *sql.DB) http.HandlerFunc {
-    type reqBody struct {
+    type request struct {
         RefreshToken string `json:"refresh_token"`
     }
-    type respBody struct {
+    type response struct {
         AccessToken string `json:"access_token"`
     }
 
@@ -25,44 +26,39 @@ func RefreshHandler(db *sql.DB) http.HandlerFunc {
             return
         }
 
-        var req reqBody
+        var req request
         if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-            log.Printf("🔴 Refresh decode error: %v", err)
+            log.Printf("refresh: decode error: %v", err)
             http.Error(w, "invalid JSON", http.StatusBadRequest)
             return
         }
-        log.Printf("🟢 RefreshHandler got token: %q", req.RefreshToken)
 
         userID, err := models.ValidateRefreshToken(db, req.RefreshToken)
         if err != nil {
             if err == sql.ErrNoRows {
-                log.Printf("🔴 ValidateRefreshToken: not found or revoked/expired")
                 http.Error(w, "invalid refresh token", http.StatusUnauthorized)
                 return
             }
-            log.Printf("🔴 ValidateRefreshToken unexpected error: %v", err)
+            log.Printf("refresh: validate token error: %v", err)
             http.Error(w, "server error", http.StatusInternalServerError)
             return
         }
 
-        // (Optionnel) revoke the old token
+        // revoke old token asynchronously
         go func() {
             if err := models.RevokeRefreshToken(db, req.RefreshToken); err != nil {
-                log.Printf("⚠️  Failed to revoke old refresh token: %v", err)
-            } else {
-                log.Printf("✅ Old refresh token revoked")
+                log.Printf("refresh: revoke token error: %v", err)
             }
         }()
 
         accessToken, err := jwt.GenerateToken(userID, "", 15*time.Minute)
         if err != nil {
-            log.Printf("🔴 GenerateToken error: %v", err)
+            log.Printf("refresh: generate token error: %v", err)
             http.Error(w, "token error", http.StatusInternalServerError)
             return
         }
-        log.Printf("✅ Issuing new access token for user %d", userID)
 
         w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(respBody{AccessToken: accessToken})
+        json.NewEncoder(w).Encode(response{AccessToken: accessToken})
     }
 }
