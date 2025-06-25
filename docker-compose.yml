@@ -77,6 +77,22 @@ services:
       - rabbitmq
     ports:
       - "5002:5000"
+  
+  # web:
+  #   image: node:18-alpine
+  #   working_dir: /app
+  #   command: sh -c "npm install && npm run dev"
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     NEXT_PUBLIC_AUTH_URL: http://localhost:5001
+  #     NEXT_PUBLIC_COMMAND_URL: http://localhost:5002
+  #   volumes:
+  #     - ./frontend:/app           # mount your source
+  #     - /app/node_modules         # anonymous volume to avoid overwriting installed modules
+  #   depends_on:
+  #     - auth
+  #     - command
 
 volumes:
   rabbitmq_data:
