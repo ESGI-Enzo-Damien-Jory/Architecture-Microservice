@@ -25,6 +25,82 @@
 			},
 			"response": []
 		},
+
+		{
+		"name": "Kitchen HealthCheck",
+		"request": {
+			"method": "GET",
+			"header": [],
+			"url": {
+			"raw": "http://localhost:5003/kitchen/health",
+			"protocol": "http",
+			"host": ["localhost"],
+			"port": "5003",
+			"path": ["kitchen", "health"]
+			}
+		},
+		"response": []
+		},
+		{
+		"name": "Get All Kitchen Orders",
+		"request": {
+			"method": "GET",
+			"header": [],
+			"url": {
+			"raw": "http://localhost:5003/kitchen/orders",
+			"protocol": "http",
+			"host": ["localhost"],
+			"port": "5003",
+			"path": ["kitchen", "orders"]
+			}
+		},
+		"response": []
+		},
+		{
+		"name": "Get Kitchen Order by ID",
+		"request": {
+			"method": "GET",
+			"header": [],
+			"url": {
+			"raw": "http://localhost:5003/kitchen/orders/1",
+			"protocol": "http",
+			"host": ["localhost"],
+			"port": "5003",
+			"path": ["kitchen", "orders", "1"]
+			}
+		},
+		"response": []
+		},
+		{
+		"name": "Update Kitchen Order Status",
+		"request": {
+			"method": "PATCH",
+			"header": [
+			{
+				"key": "Content-Type",
+				"value": "application/json"
+			}
+			],
+			"body": {
+			"mode": "raw",
+			"raw": "{\n  \"status\": \"ready\"\n}",
+			"options": {
+				"raw": {
+				"language": "json"
+				}
+			}
+			},
+			"url": {
+			"raw": "http://localhost:5003/kitchen/orders/1/status",
+			"protocol": "http",
+			"host": ["localhost"],
+			"port": "5003",
+			"path": ["kitchen", "orders", "1", "status"]
+			}
+		},
+		"response": []
+		},
+
 		{
 			"name": "Auth Signup",
 			"request": {
