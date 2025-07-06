@@ -2,9 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": [
-      "ES2020"
-    ],
+    "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -12,19 +10,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "typeRoots": [
-      "./node_modules/@types",
-      "./src/@types"
-    ],
-    "types": [
-      "node"
-    ]
+    "noErrorTruncation": true,
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "types": ["node", "express"]
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

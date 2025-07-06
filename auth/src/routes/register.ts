@@ -2,7 +2,8 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import bcrypt from "bcrypt";
-import { Role } from "../generated/prisma";
+import { Role } from "@prisma/client";
+
 
 const router = Router();
 
