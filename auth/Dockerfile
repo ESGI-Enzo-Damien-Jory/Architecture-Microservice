@@ -1,22 +1,33 @@
-# Stage 1: builder
-FROM golang:1.24-alpine3.22 AS builder
+# Étape 1 : build de l'app TypeScript + client Prisma
+FROM node:18-alpine AS builder
+
 WORKDIR /app
 
-# Cache deps
-COPY go.mod go.sum ./
-RUN go mod download
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o auth_service ./cmd/auth
+# Génère le client Prisma
+RUN npx prisma generate
 
-FROM alpine:3.19
+# Compile le TypeScript
+RUN npm run build
+
+# Étape 2 : image finale
+FROM node:18-alpine
+
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-COPY --from=builder /app/auth_service .
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/prisma ./prisma
 
-EXPOSE 5000
+ENV NODE_ENV=production
 
-CMD ["./auth_service"]
+CMD ["node", "dist/index.js"]
