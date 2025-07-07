@@ -1,8 +1,9 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import bcrypt from "bcrypt";
-import { sign_token } from "../lib/jwt";
+import { sign_access_token } from "../lib/jwt";
 import { prisma } from "../lib/prisma";
+import { RefreshTokenService } from "../lib/refresh-token-service";
 
 const router = Router();
 
@@ -43,14 +44,17 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    console.log(`[AUTH] Password verified, generating token for user ID: ${user.id}`);
-    const token = sign_token({ id: user.id, role: user.role });
+    console.log(`[AUTH] Password verified, generating tokens for user ID: ${user.id}`);
+    
+    const accessToken = sign_access_token({ id: user.id, role: user.role });
+    const refreshToken = await RefreshTokenService.createRefreshToken(user.id);
 
     const duration = Date.now() - startTime;
     console.log(`[AUTH] Login successful for user ID: ${user.id}, role: ${user.role} (${duration}ms)`);
 
     res.json({
-      token,
+      accessToken,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email,
