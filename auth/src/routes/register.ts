@@ -6,27 +6,29 @@ import { Role } from "@prisma/client";
 
 const router = Router();
 
+const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(4),
+  role: z.nativeEnum(Role),
+});
+
+type RegisterInput = z.infer<typeof registerSchema>;
+
 router.post("/", async (req: Request, res: Response): Promise<void> => {
   const startTime = Date.now();
   console.log("[REGISTER] Registration attempt started");
   
-  const schema = z.object({
-    email: z.string().email(),
-    password: z.string().min(4),
-    role: z.nativeEnum(Role),
-  });
-
-  const parsed = schema.safeParse(req.body);
+  const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
     console.log("[REGISTER] Invalid input data provided", parsed.error.flatten());
     res.status(400).json({ error: "Invalid input" });
     return;
   }
 
-  const { email, password, role } = parsed.data;
+  const { email, password, role }: RegisterInput = parsed.data;
   console.log(`[REGISTER] Registration attempt for email: ${email}, role: ${role}`);
 
-  if (parsed.data.role === Role.admin) {
+  if (role === Role.admin) {
     console.log(`[REGISTER] Rejected admin registration attempt for email: ${email}`);
     res.status(403).json({ error: "Cannot register as admin" });
     return;

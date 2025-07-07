@@ -3,7 +3,6 @@ import { Role } from "@prisma/client";
 import fs from "fs";
 import path from "path";
 
-// Read RSA keys from mounted secrets
 const getPrivateKey = (): string => {
   try {
     return fs.readFileSync(path.join("/app/secrets", "private.pem"), "utf8");
