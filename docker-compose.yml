@@ -95,6 +95,43 @@ services:
         condition: service_healthy
     ports:
       - "5003:5000"
+  command:
+    build:
+      context: ./command
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://command_user:command_pass@postgres_command:5432/command?sslmode=disable
+      RABBITMQ_URL: amqp://admin:supersecret@rabbitmq:5672/
+      PUBLIC_KEY_PATH: /secrets/public.pem
+    volumes:
+      - ./secrets:/secrets:ro
+    depends_on:
+      postgres_command:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "5002:5000"
+    restart: unless-stopped
+
+  command:
+    build:
+      context: ./command
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://command_user:command_pass@postgres_command:5432/command?sslmode=disable
+      RABBITMQ_URL: amqp://admin:supersecret@rabbitmq:5672/
+      PUBLIC_KEY_PATH: /secrets/public.pem
+    volumes:
+      - ./secrets:/secrets:ro
+    depends_on:
+      postgres_command:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "5002:5000"
+    restart: unless-stopped
 
   delivery:
     build:
@@ -170,6 +207,23 @@ services:
       timeout: 2s
       retries: 5
 
+  postgres_command:
+    image: postgres:16
+    container_name: postgres_command
+    environment:
+      POSTGRES_DB: command
+      POSTGRES_USER: command_user
+      POSTGRES_PASSWORD: command_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_command_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "command_user", "-d", "command"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
   postgres_delivery:
     image: postgres:16
     container_name: postgres_delivery
@@ -191,5 +245,6 @@ services:
 
 volumes:
   pg_kitchen_data:
+  pg_command_data:
   pg_delivery_data:
   rabbitmq_data:

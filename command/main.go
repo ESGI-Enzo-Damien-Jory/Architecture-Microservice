@@ -1,12 +1,13 @@
 package main
 
 import (
-	"command/config"
-	"command/route"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+
+	"command/config"
+	"command/routes"
 )
 
 func main() {
@@ -15,7 +16,7 @@ func main() {
 	config.InitRabbitMQ()
 
 	app := fiber.New()
-	route.SetupRoutes(app)
+	routes.SetupRoutes(app)
 
 	log.Fatal(app.Listen(":5000"))
 }
