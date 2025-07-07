@@ -18,3 +18,5 @@ require (
 	github.com/valyala/tcplisten v1.0.0
 	golang.org/x/sys v0.28.0
 )
+
+require github.com/rabbitmq/amqp091-go v1.10.0 // indirect

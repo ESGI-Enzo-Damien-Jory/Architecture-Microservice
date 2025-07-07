@@ -1,7 +1,10 @@
 package main
 
 import (
+	"log"
+
 	"kitchen/config"
+	"kitchen/queue"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -9,7 +12,9 @@ import (
 func main() {
 	app := fiber.New()
 
+	queue.ConsumeOrders()
+
 	config.SetupRoutes(app)
 
-	app.Listen(":3000")
+	log.Fatal(app.Listen(":3000"))
 }
