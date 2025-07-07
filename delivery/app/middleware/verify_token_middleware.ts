@@ -1,5 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import type { NextFn } from '@adonisjs/core/types/http'
+import env from '#start/env'
 import axios from 'axios'
 
 export default class VerifyTokenMiddleware {
@@ -14,7 +15,8 @@ export default class VerifyTokenMiddleware {
     const token = authHeader.replace('Bearer ', '')
 
     try {
-      const verifyUrl = `${process.env.AUTH_SERVICE_URL}/verify`
+      const authServiceUrl = env.get('AUTH_SERVICE_URL')
+      const verifyUrl = `${authServiceUrl}/verify`
 
       const { data } = await axios.post(verifyUrl, {}, {
         headers: { Authorization: `Bearer ${token}` },

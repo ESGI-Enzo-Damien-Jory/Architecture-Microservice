@@ -74,7 +74,7 @@ services:
 
   delivery:
     build:
-      context: .
+      context: ./delivery
       dockerfile: Dockerfile
     container_name: delivery_service
     depends_on:
@@ -85,16 +85,28 @@ services:
     env_file:
       - ./delivery/.env
     environment:
+      # Application configuration
+      TZ: UTC
       PORT: 3333
       HOST: 0.0.0.0
+      LOG_LEVEL: info
       NODE_ENV: development
+      
+      # Database configuration
       DB_CONNECTION: pg
-      PG_HOST: postgres
-      PG_PORT: 5432
+      DB_HOST: postgres_delivery
+      DB_PORT: 5432
+      DB_USER: delivery_user
+      DB_PASSWORD: delivery_pass
+      DB_DATABASE: delivery
+      
+      # Service URLs
+      AUTH_SERVICE_URL: http://auth:3001
     ports:
       - '3333:3333'
     volumes:
-      - .:/app
+      - ./delivery:/app
+      - /app/node_modules
     command: ["node", "ace", "serve", "--watch"]
 
   postgres_kitchen:
@@ -126,9 +138,9 @@ services:
     volumes:
       - pg_delivery_data:/var/lib/postgresql/data
     ports:
-      - '5432:5432'
+      - '5435:5432'
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "kitchen_user", "-d", "kitchen"]
+      test: ["CMD", "pg_isready", "-U", "delivery_user", "-d", "delivery"]
       interval: 5s
       timeout: 2s
       retries: 5
