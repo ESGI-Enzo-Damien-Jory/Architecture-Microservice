@@ -1,4 +1,4 @@
-import { verify_token } from "../lib/jwt";
+import { verify_access_token } from "../lib/jwt";
 import { Request, Response, NextFunction } from "express";
 
 export const require_auth = (
@@ -12,7 +12,7 @@ export const require_auth = (
     return;
   }
 
-  const payload = verify_token(token);
+  const payload = verify_access_token(token);
   if (!payload) {
     res.status(401).json({ error: "Invalid token" });
     return;
