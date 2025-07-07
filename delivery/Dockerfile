@@ -1,25 +1,25 @@
-# Dockerfile
+FROM node:18-slim
 
-FROM node:20-alpine
-
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies
-RUN apk add --no-cache bash
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy package files and install deps
+# Copy package files
 COPY package*.json ./
-RUN npm install --production
 
-# Copy the rest of the app
+# Install all dependencies (needed for development mode)
+RUN npm ci
+
+# Copy source code
 COPY . .
 
-# Build AdonisJS if needed (uncomment if you compile assets)
-# RUN node ace build
-
-# Expose port (default for Adonis is 3333)
+# Expose port
 EXPOSE 3333
 
-# Start the server
+# Default command (can be overridden by docker-compose)
 CMD ["node", "ace", "serve", "--watch"]
