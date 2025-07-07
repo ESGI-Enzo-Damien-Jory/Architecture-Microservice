@@ -141,6 +141,7 @@ services:
       POSTGRES_PASSWORD: delivery_pass
     volumes:
       - pg_delivery_data:/var/lib/postgresql/data
+      - ./delivery/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - '5435:5432'
     healthcheck:
