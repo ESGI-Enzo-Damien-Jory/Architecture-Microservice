@@ -1,50 +1,18 @@
 services:
-  rabbitmq:
-    image: rabbitmq:3.13.1-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: supersecret
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-
-  postgres_auth:
-    image: postgres:16
-    container_name: postgres_auth
-    environment:
-      POSTGRES_DB: auth
-      POSTGRES_USER: auth_user
-      POSTGRES_PASSWORD: auth_pass
-    ports:
-      - "5432:5432"
-    volumes:
-      - pg_auth_data:/var/lib/postgresql/data
-      - ./auth/initdb:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "auth_user", "-d", "auth"]
-      interval: 5s
-      timeout: 2s
-      retries: 5
-
-  postgres_command:
-    image: postgres:16
-    container_name: postgres_command
-    environment:
-      POSTGRES_DB: command
-      POSTGRES_USER: command_user
-      POSTGRES_PASSWORD: command_pass
-    ports:
-      - "5433:5432"
-    volumes:
-      - pg_command_data:/var/lib/postgresql/data
+  # rabbitmq:
+  #   image: rabbitmq:3.13.1-management
+  #   container_name: rabbitmq
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: admin
+  #     RABBITMQ_DEFAULT_PASS: supersecret
+  #   healthcheck:
+  #     test: ["CMD", "rabbitmq-diagnostics", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
   postgres_kitchen:
     image: postgres:16
@@ -67,33 +35,38 @@ services:
     build:
       context: ./auth
       dockerfile: Dockerfile
+    env_file:
+      - ./auth/.env
     environment:
-      PRIVATE_KEY_PATH: /secrets/private.pem
-      PUBLIC_KEY_PATH: /secrets/public.pem
-      DATABASE_URL: postgresql://auth_user:auth_pass@postgres_auth:5432/auth?sslmode=disable
-      AUTH_PORT: "5000"
-    volumes:
-      - ./secrets:/secrets:ro
-    depends_on:
-      - postgres_auth
+      PORT: "3001"
+      NODE_ENV: production
     ports:
-      - "5001:5000"
+      - "3001:3001"
+    volumes:
+      - ./secrets:/app/secrets:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 2m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
-  command:
-    build:
-      context: ./command
-      dockerfile: Dockerfile
+  web:
+    image: node:18-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3000:3000"
     environment:
-      PUBLIC_KEY_PATH: /secrets/public.pem
-      DATABASE_URL: postgresql://command_user:command_pass@postgres_command:5432/command?sslmode=disable
+      NEXT_PUBLIC_AUTH_URL: http://localhost:3001
     volumes:
-      - ./secrets:/secrets:ro
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
-      - postgres_command
-      - rabbitmq
-    ports:
-      - "5002:5000"
-
+      - auth
+    restart: unless-stopped
+    
   kitchen:
     build:
       context: ./kitchen
@@ -112,7 +85,6 @@ services:
       - "5003:5000"
 
 volumes:
-  rabbitmq_data:
-  pg_auth_data:
-  pg_command_data:
   pg_kitchen_data:
+#   rabbitmq_data:
+

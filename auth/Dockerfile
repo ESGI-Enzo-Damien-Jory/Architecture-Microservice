@@ -1,22 +1,47 @@
-# Stage 1: builder
-FROM golang:1.24-alpine3.22 AS builder
+# Build stage
+FROM node:18-alpine AS builder
+
 WORKDIR /app
 
-# Cache deps
-COPY go.mod go.sum ./
-RUN go mod download
+# Copy package files
+COPY package.json package-lock.json ./
+RUN npm ci
 
+# Copy source code
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o auth_service ./cmd/auth
+# Generate Prisma client
+RUN npx prisma generate
 
-FROM alpine:3.19
+# Build TypeScript
+RUN npm run build
+
+# Production stage
+FROM node:18-alpine
+
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+# Install wget for health checks
+RUN apk add --no-cache wget
 
-COPY --from=builder /app/auth_service .
+# Copy package files and install production dependencies
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-EXPOSE 5000
+# Copy built application and Prisma files
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/prisma ./prisma
 
-CMD ["./auth_service"]
+# Create secrets directory for RSA keys
+RUN mkdir -p /app/secrets
+
+# Set environment
+ENV NODE_ENV=production
+
+# Expose port
+EXPOSE 3001
+
+# Start the application
+CMD ["node", "dist/index.js"]

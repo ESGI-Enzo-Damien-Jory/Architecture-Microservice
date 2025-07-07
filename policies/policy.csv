@@ -1,0 +1,24 @@
+# sub,       obj,       act,                    eft,    cond
+
+# 1. Admin : tout accès
+admin,       *,         *,                      allow,  true
+
+# 2. Client
+# - Lire le menu
+client,      Menu,      read,                   allow,  true
+# - Créer une commande
+client,      Order,     create,                 allow,  true
+# - Lire SES commandes uniquement (ABAC)
+client,      Order,     read,                   allow,  r.attrs.ownerId == r.sub.id
+
+# 3. Chef (cuisinier)
+# - Lire toutes les commandes
+cook,        Order,     read,                   allow,  true
+# - Mettre à jour le statut des plats
+cook,        Order,     update_status,         allow,  true
+
+# 4. Livreur (delivery)
+# - Lire les commandes prêtes pour livraison
+delivery,    Order,     read,                   allow,  r.attrs.status == "ready_to_deliver"
+# - Mettre à jour le statut de la livraison
+delivery,    Order,     update_status,         allow,  true

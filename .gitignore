@@ -1,1 +1,3 @@
 secrets/private.pem
+**/dist
+.idea
