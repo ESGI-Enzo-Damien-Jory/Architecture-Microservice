@@ -1,128 +1,171 @@
 {
 	"info": {
-		"_postman_id": "39451afc-324e-46d2-b1c8-d8e102534969",
+		"_postman_id": "434fbeeb-f29a-471c-8314-3503d39c20cc",
 		"name": "AMS",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "45155023",
-		"_collection_link": "https://enzohugonnier.postman.co/workspace/Enzo-Hugonnier's-Workspace~18a756a1-5287-4d09-83fc-6a952e70ba60/collection/45155023-39451afc-324e-46d2-b1c8-d8e102534969?action=share&source=collection_link&creator=45155023"
+		"_exporter_id": "45035265",
+		"_collection_link": "https://jaden38.postman.co/workspace/Jaden38's-Workspace~7dc757c0-55f3-42d4-8d66-7089d7a457b5/collection/45035265-434fbeeb-f29a-471c-8314-3503d39c20cc?action=share&source=collection_link&creator=45035265"
 	},
 	"item": [
 		{
-			"name": "Auth HealthCheck",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "localhost:5001/health",
-					"host": [
-						"localhost"
-					],
-					"port": "5001",
-					"path": [
-						"health"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Auth Signup",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"email\": \"foo@mail.com\",\r\n    \"full_name\": \"Foo Bar\",\r\n    \"password\": \"pass123\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Auth HealthCheck",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:3001/health",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"health"
+							]
 						}
-					}
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "localhost:5001/signup",
-					"host": [
-						"localhost"
-					],
-					"port": "5001",
-					"path": [
-						"signup"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Auth Login",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"email\": \"foo@mail.com\",\r\n    \"password\": \"pass123\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
+				{
+					"name": "Auth Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"dnithard@myges.fr\",\r\n    \"password\": \"pass123\",\r\n    \"role\": \"client\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/register",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"register"
+							]
 						}
-					}
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "localhost:5001/login",
-					"host": [
-						"localhost"
-					],
-					"port": "5001",
-					"path": [
-						"login"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Auth Refresh Token",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"refresh_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTExMzk0OTQsImlhdCI6MTc1MDUzNDY5NCwicm9sZSI6ImNsaWVudCIsInN1YiI6MX0.javppkbOsUN210QfGZPupXOvP4-qFfdCb7ApDcK4uDd0yt5fNDiIHaiEiUwSPnA_UMiHjp0E-hn2xImgpnsxAD7SIJgDNZkJ6Sd_P8h44QjNBhjXlvqBbYMY9x-8Mn3DcEaEw-CqrOOGce7Ys4z7_QMnB6ieQLYG6w1GQLaCC_roMs42-EZ49j9W0svagNMM-tRNF3300QtRdmfbD0jiScM6ue3xbMjcVkunGG5lC9mllXNkzmayum-pQI5YxsFw1Tiasw8bY9f2SV6SI8AUSijmZ_fUHTWh4bAwnojM36U1i4o8Et5QwH4NiWqztIMXy-VAi4G2BqRkWXsqW5iGCA\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
+				{
+					"name": "Auth Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"dnithard@myges.fr\",\r\n    \"password\": \"pass123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/login",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"login"
+							]
 						}
-					}
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "localhost:5001/refresh",
-					"host": [
-						"localhost"
-					],
-					"port": "5001",
-					"path": [
-						"refresh"
-					]
+				{
+					"name": "Auth Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"refreshToken\": \"4f67fc5ff1dcea615f236702a21b6d42ee3761bdd7397e5ee5674304a89d6471\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/refresh",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Token",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImExNDNlNjU2LWJkOGMtNDNhYy1hNjQyLWY0Y2Y3NmVlZTQ0YiIsInJvbGUiOiJjbGllbnQiLCJpYXQiOjE3NTE4Nzc2MDAsImV4cCI6MTc1MTg4MTIwMCwiYXVkIjoibWljcm9zZXJ2aWNlcyIsImlzcyI6ImF1dGgtc2VydmljZSJ9.Li6_DnB2WkseOyFlWGliQE4LQmWyzsmeJ5Frr20EGakdGXZBmvAwrqD5n6PN4oN-d03_gvmSj6CyHdK1xeBi_X6Qd46GSCqgne2-gr5YKBXofB3Ole2NsSIleI410B8GctBzc3CCoNWdYfmFpTwP-IQEfZS0qe8YmxNPJzjr75o8tgiyIbXC2znNXk05f5u8NTZ3d-aZ8jItAbXQfhR3fhlTJAImt_oU_kbgNwVNudQiZKdGr67_7-bXg-5onEid9_egwIh5nSiVdgZaG-JX3-iZqs-aN92BUyiBND0Tr7H2LrZrpQFio8IYv5CvH0xG8cn2BNK_W-CMFW2wyGb6cw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "localhost:3001/verify",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Me",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImExNDNlNjU2LWJkOGMtNDNhYy1hNjQyLWY0Y2Y3NmVlZTQ0YiIsInJvbGUiOiJjbGllbnQiLCJpYXQiOjE3NTE4NzM0NDMsImV4cCI6MTc1MTg3NzA0MywiYXVkIjoibWljcm9zZXJ2aWNlcyIsImlzcyI6ImF1dGgtc2VydmljZSJ9.WxklIdYGVdLc1aI3BQQh1uhY9jX5bgF3vzatsma0cz-sOeo8QM_F4ugNNWZfHd-uLlbwM2STBng8zm7ZcppbikCh7wHut1vAtgAqoPknQcMq3JMNirRNZCDBtUG1_3yy9VjxW0FEEKX9E4P5T9YCgXUFNJjOjPOfLp-KcPYJb_6vovG7rIgjngyZLIngbTSl0hnN4H1CS5dbNkakJoVMpPe1OcjLC4NbpD6GF0o_YrnL3wB4phm1v5XBkIqrDJwDLdMIgwjGhqi_HzLiWv5xmjS_GEcgkYmEbcu0-g34lrWaaYcwPIJG-8bAAXpXdyqHRKPh32acH66pEjkpWTciSQ",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:3001/me",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"me"
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
-		},
-		{
-			"name": "Command HealthCheck",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "localhost:5002/health",
-					"host": [
-						"localhost"
-					],
-					"port": "5002",
-					"path": [
-						"health"
-					]
-				}
-			},
-			"response": []
+			]
 		}
 	]
 }
