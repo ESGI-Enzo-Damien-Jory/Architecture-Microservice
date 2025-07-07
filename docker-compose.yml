@@ -85,14 +85,12 @@ services:
     env_file:
       - ./delivery/.env
     environment:
-      # Application configuration
       TZ: UTC
       PORT: 3333
       HOST: 0.0.0.0
       LOG_LEVEL: info
       NODE_ENV: development
       
-      # Database configuration
       DB_CONNECTION: pg
       DB_HOST: postgres_delivery
       DB_PORT: 5432
@@ -100,7 +98,6 @@ services:
       DB_PASSWORD: delivery_pass
       DB_DATABASE: delivery
       
-      # Service URLs
       AUTH_SERVICE_URL: http://auth:3001
     ports:
       - '3333:3333'
@@ -108,6 +105,13 @@ services:
       - ./delivery:/app
       - /app/node_modules
     command: ["node", "ace", "serve", "--watch"]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
 
   postgres_kitchen:
     image: postgres:16
