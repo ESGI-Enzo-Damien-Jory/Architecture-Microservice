@@ -3,6 +3,8 @@ package queue
 import (
 	"encoding/json"
 	"log"
+	"os"
+	"time"
 
 	"kitchen/service"
 
@@ -14,9 +16,34 @@ type OrderMessage struct {
 }
 
 func ConsumeOrders() {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	// Use environment variable from docker-compose
+	rabbitmqURL := os.Getenv("RABBITMQ_URL")
+	if rabbitmqURL == "" {
+		rabbitmqURL = "amqp://guest:guest@localhost:5672/"
+	}
+
+	// Retry connection logic
+	var conn *amqp.Connection
+	var err error
+	maxRetries := 10
+	retryDelay := 5 * time.Second
+
+	for i := 0; i < maxRetries; i++ {
+		log.Printf("🔄 Attempting to connect to RabbitMQ (attempt %d/%d)...", i+1, maxRetries)
+		conn, err = amqp.Dial(rabbitmqURL)
+		if err == nil {
+			log.Println("✅ Successfully connected to RabbitMQ")
+			break
+		}
+		log.Printf("❌ Failed to connect to RabbitMQ: %v", err)
+		if i < maxRetries-1 {
+			log.Printf("⏳ Retrying in %v...", retryDelay)
+			time.Sleep(retryDelay)
+		}
+	}
+
 	if err != nil {
-		log.Fatalf("❌ Failed to connect to RabbitMQ: %v", err)
+		log.Fatalf("❌ Failed to connect to RabbitMQ after %d attempts: %v", maxRetries, err)
 	}
 
 	ch, err := conn.Channel()
