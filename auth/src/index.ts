@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import register from "./routes/register";
 import login from "./routes/login";
 import refresh from "./routes/refresh";
+import verify from "./routes/verify";
 import me from "./routes/me";
 import health from "./routes/health";
 import { RefreshTokenService } from "./lib/refresh-token-service";
@@ -18,6 +19,7 @@ app.use("/health", health);
 app.use("/register", register);
 app.use("/login", login);
 app.use("/refresh", refresh);
+app.use("/verify", verify);
 app.use("/me", me);
 
 app.get("/", (req, res) => {
