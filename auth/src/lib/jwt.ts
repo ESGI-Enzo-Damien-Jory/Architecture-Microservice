@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { Role } from "@prisma/client";
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 
@@ -21,7 +22,7 @@ const getPublicKey = (): string => {
   }
 };
 
-export const sign_token = (payload: { id: string; role: Role }): string => {
+export const sign_access_token = (payload: { id: string; role: Role }): string => {
   try {
     const privateKey = getPrivateKey();
     return jwt.sign(payload, privateKey, { 
@@ -31,12 +32,16 @@ export const sign_token = (payload: { id: string; role: Role }): string => {
       audience: "microservices"
     });
   } catch (error) {
-    console.error("Token signing failed:", error);
-    throw new Error("Failed to sign token");
+    console.error("Access token signing failed:", error);
+    throw new Error("Failed to sign access token");
   }
 };
 
-export const verify_token = (token: string): { id: string; role: Role } | null => {
+export const sign_refresh_token = (): string => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+export const verify_access_token = (token: string): { id: string; role: Role } | null => {
   try {
     const publicKey = getPublicKey();
     const payload = jwt.verify(token, publicKey, {
@@ -47,7 +52,7 @@ export const verify_token = (token: string): { id: string; role: Role } | null =
     
     return payload;
   } catch (error) {
-    console.error("Token verification failed:", error);
+    console.error("Access token verification failed:", error);
     return null;
   }
 };
