@@ -16,23 +16,6 @@ services:
       timeout: 5s
       retries: 5
 
-  postgres_kitchen:
-    image: postgres:16
-    container_name: postgres_kitchen
-    environment:
-      POSTGRES_DB: kitchen
-      POSTGRES_USER: kitchen_user
-      POSTGRES_PASSWORD: kitchen_pass
-    ports:
-      - "5434:5432"
-    volumes:
-      - pg_kitchen_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "kitchen_user", "-d", "kitchen"]
-      interval: 5s
-      timeout: 2s
-      retries: 5
-
   auth:
     build:
       context: ./auth
@@ -89,6 +72,85 @@ services:
       - "5003:5000"
     restart: unless-stopped
 
+  delivery:
+    build:
+      context: ./delivery
+      dockerfile: Dockerfile
+    container_name: delivery_service
+    depends_on:
+      postgres_delivery:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - ./delivery/.env
+    environment:
+      TZ: UTC
+      PORT: 3333
+      HOST: 0.0.0.0
+      LOG_LEVEL: info
+      NODE_ENV: development
+      
+      DB_CONNECTION: pg
+      DB_HOST: postgres_delivery
+      DB_PORT: 5432
+      DB_USER: delivery_user
+      DB_PASSWORD: delivery_pass
+      DB_DATABASE: delivery
+      
+      AUTH_SERVICE_URL: http://auth:3001
+    ports:
+      - '3333:3333'
+    volumes:
+      - ./delivery:/app
+      - /app/node_modules
+    command: ["node", "ace", "serve", "--watch"]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  postgres_kitchen:
+    image: postgres:16
+    container_name: postgres_kitchen
+    restart: always
+    environment:
+      POSTGRES_DB: kitchen
+      POSTGRES_USER: kitchen_user
+      POSTGRES_PASSWORD: kitchen_pass
+    volumes:
+      - pg_kitchen_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kitchen_user", "-d", "kitchen"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+  postgres_delivery:
+    image: postgres:16
+    container_name: postgres_delivery
+    restart: always
+    environment:
+      POSTGRES_DB: delivery
+      POSTGRES_USER: delivery_user
+      POSTGRES_PASSWORD: delivery_pass
+    volumes:
+      - pg_delivery_data:/var/lib/postgresql/data
+      - ./delivery/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - '5435:5432'
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "delivery_user", "-d", "delivery"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
 volumes:
   pg_kitchen_data:
+  pg_delivery_data:
   rabbitmq_data:
