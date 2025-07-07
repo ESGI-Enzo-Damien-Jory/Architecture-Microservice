@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.25 AS builder
+FROM golang:1.24.4 AS builder
 
 WORKDIR /app
 
@@ -11,12 +11,12 @@ COPY . .
 RUN go build -o kitchen-service
 
 # Final image
-FROM gcr.io/distroless/base-debian11
+FROM gcr.io/distroless/base-debian12
 
 WORKDIR /app
 
 COPY --from=builder /app/kitchen-service .
 
-EXPOSE 3000
+EXPOSE 5000
 
 ENTRYPOINT ["/app/kitchen-service"]
