@@ -8,11 +8,14 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: supersecret
+    volumes:
+      - ./advanced.config:/etc/rabbitmq/advanced.config:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+
 
   auth:
     build:

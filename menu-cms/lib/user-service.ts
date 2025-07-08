@@ -280,9 +280,7 @@ export class UserService {
   }
 
   static canEditUser(currentUserRole: Role, targetUserRole: Role): boolean {
-    // Seuls les admins peuvent modifier les utilisateurs
-    // Et ils ne peuvent pas modifier d'autres admins (sauf eux-mêmes)
-    if (currentUserRole !== Role.admin) return false;
+    if (currentUserRole !== Role.admin || targetUserRole === Role.admin) return false;
     return true; // Les admins peuvent tout faire
   }
 }

@@ -38,15 +38,11 @@ import {
   Loader2,
   Search,
   Filter,
-  Eye,
-  EyeOff,
   Shield,
-  Ban,
   Key,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 
-// Types basés sur ton système existant
 enum Role {
   client = "client",
   cook = "cook",
@@ -181,7 +177,7 @@ export default function UsersPage() {
 
     setSubmitting(true);
     try {
-      const updateData: any = {
+      const updateData: { email: string; role: Role; password?: string } = {
         email: formData.email.trim(),
         role: formData.role,
       };
@@ -339,7 +335,7 @@ export default function UsersPage() {
             <Shield className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Accès refusé</h3>
             <p className="text-muted-foreground text-center">
-              Vous n'avez pas les permissions nécessaires pour gérer les
+              Vous n&apos;avez pas les permissions nécessaires pour gérer les
               utilisateurs.
             </p>
           </CardContent>
@@ -654,9 +650,9 @@ export default function UsersPage() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Modifier l'utilisateur</DialogTitle>
+            <DialogTitle>Modifier l&apos;utilisateur</DialogTitle>
             <DialogDescription>
-              Modifiez les informations de l'utilisateur
+              Modifiez les informations de l&apos;utilisateur
             </DialogDescription>
           </DialogHeader>
 
@@ -815,9 +811,9 @@ export default function UsersPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer l'utilisateur</DialogTitle>
+            <DialogTitle>Supprimer l&apos;utilisateur</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer l'utilisateur &quot;
+              Êtes-vous sûr de vouloir supprimer l&apos;utilisateur &quot;
               {selectedUser?.email}&quot; ? Cette action est irréversible.
             </DialogDescription>
           </DialogHeader>

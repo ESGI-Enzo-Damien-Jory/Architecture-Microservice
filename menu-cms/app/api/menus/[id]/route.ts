@@ -89,7 +89,7 @@ export async function PUT(
     }
 
     // Préparer les données de mise à jour
-    const updateData: any = {};
+    const updateData: PrismaClient['menu']['update']['arguments']['data'] = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (priceCents !== undefined) updateData.priceCents = priceCents;

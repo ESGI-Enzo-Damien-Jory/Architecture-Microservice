@@ -354,7 +354,7 @@ export default function MenusPage() {
               </div>
 
               <div className="col-span-2">
-                <Label htmlFor="imageUrl">URL de l'image</Label>
+                <Label htmlFor="imageUrl">URL de l&apos;image</Label>
                 <Input
                   id="imageUrl"
                   value={formData.imageUrl}
@@ -768,7 +768,7 @@ export default function MenusPage() {
             </div>
 
             <div className="col-span-2">
-              <Label htmlFor="edit-imageUrl">URL de l'image</Label>
+              <Label htmlFor="edit-imageUrl">URL de l&apos;image</Label>
               <Input
                 id="edit-imageUrl"
                 value={formData.imageUrl}
