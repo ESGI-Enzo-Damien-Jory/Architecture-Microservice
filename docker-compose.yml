@@ -9,7 +9,7 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: supersecret
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - ./advanced.config:/etc/rabbitmq/advanced.config:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
@@ -20,6 +20,7 @@ services:
     build:
       context: ./auth
       dockerfile: Dockerfile
+    container_name: auth
     env_file:
       - ./auth/.env
     environment:
@@ -44,23 +45,47 @@ services:
     ports:
       - "3000:3000"
     environment:
+      # Client-side URLs (build time)
       NEXT_PUBLIC_AUTH_URL: http://localhost:3001
+      
+      # Server-side URLs (runtime) - Docker service names
+      AUTH_SERVICE_URL: http://auth:3001
+      KITCHEN_SERVICE_URL: http://kitchen:5000
+      DELIVERY_SERVICE_URL: http://delivery:3333
+      RABBIT_MQ_URL: http://rabbitmq:15672
+      
+      NODE_ENV: development
     volumes:
       - ./frontend:/app
       - /app/node_modules
     depends_on:
       - auth
     restart: unless-stopped
+
+  menu-cms:
+    build:
+      context: ./menu-cms
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      AUTH_SERVICE_URL: http://auth:3001
+    restart: unless-stopped
+    depends_on:
+      - auth
     
   kitchen:
     build:
       context: ./kitchen
       dockerfile: Dockerfile
+    container_name: kitchen
     environment:
       DATABASE_URL: postgresql://kitchen_user:kitchen_pass@postgres_kitchen:5432/kitchen?sslmode=disable
       RABBITMQ_URL: amqp://admin:supersecret@rabbitmq:5672/
       JWT_PUBLIC_KEY_PATH: /secrets/public.pem
       KITCHEN_PORT: "5000"
+      AUTH_SERVICE_URL: http://auth:3001
     volumes:
       - ./secrets:/secrets:ro
     depends_on:
@@ -70,13 +95,12 @@ services:
         condition: service_healthy
     ports:
       - "5003:5000"
-    restart: unless-stopped
 
   delivery:
     build:
       context: ./delivery
       dockerfile: Dockerfile
-    container_name: delivery_service
+    container_name: delivery
     depends_on:
       postgres_delivery:
         condition: service_healthy
@@ -112,6 +136,21 @@ services:
       retries: 3
       start_period: 30s
     restart: unless-stopped
+
+  # Ajoutez votre service command si nécessaire
+  # command:
+  #   build:
+  #     context: ./command
+  #     dockerfile: Dockerfile
+  #   container_name: command
+  #   ports:
+  #     - "5002:5002"
+  #   environment:
+  #     AUTH_SERVICE_URL: http://auth:3001
+  #     RABBITMQ_URL: amqp://admin:supersecret@rabbitmq:5672/
+  #   depends_on:
+  #     - auth
+  #     - rabbitmq
 
   postgres_kitchen:
     image: postgres:16

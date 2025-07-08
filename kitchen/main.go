@@ -1,20 +1,27 @@
 package main
 
 import (
-	"log"
+    "log"
+    "kitchen/config"
+    "kitchen/queue"
 
-	"kitchen/config"
-	"kitchen/queue"
-
-	"github.com/gofiber/fiber/v2"
+    "github.com/gofiber/fiber/v2"
+    "github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
-	app := fiber.New()
+    app := fiber.New()
 
-	queue.ConsumeOrders()
+    app.Use(cors.New(cors.Config{
+        AllowOrigins:  "http://localhost:3002",
+        AllowMethods:  "GET",
+        AllowHeaders:  "Origin, Content-Type, Accept, Authorization",
+        AllowCredentials: true,
+        MaxAge:        3600,
+    })) // :contentReference[oaicite:0]{index=0}
 
-	config.SetupRoutes(app)
+    queue.ConsumeOrders()
+    config.SetupRoutes(app)
 
-	log.Fatal(app.Listen(":5000"))
+    log.Fatal(app.Listen(":5000"))
 }

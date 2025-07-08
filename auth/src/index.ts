@@ -7,12 +7,25 @@ import refresh from "./routes/refresh";
 import verify from "./routes/verify";
 import me from "./routes/me";
 import health from "./routes/health";
+import users from "./routes/users";
 import { RefreshTokenService } from "./lib/refresh-token-service";
 
 dotenv.config();
 const app = express();
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowedOrigins = ["http://localhost:3000", "http://localhost:3002"];
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true
+  })
+);
 app.use(express.json());
 
 app.use("/health", health);
@@ -21,6 +34,7 @@ app.use("/login", login);
 app.use("/refresh", refresh);
 app.use("/verify", verify);
 app.use("/me", me);
+app.use("/users", users);
 
 app.get("/", (req, res) => {
   res.json({ service: "auth", status: "running" });
