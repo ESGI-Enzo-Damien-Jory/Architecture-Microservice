@@ -1,7 +1,5 @@
 import { useAuthStore } from "@/lib/auth-store";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
-
 export interface Stats {
   categories: {
     total: number;
@@ -25,7 +23,7 @@ export class StatsService {
   ): Promise<T> {
     const token = useAuthStore.getState().accessToken;
 
-    const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api${endpoint}`, {
       headers: {
         "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),

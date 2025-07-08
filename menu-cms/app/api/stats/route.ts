@@ -6,8 +6,6 @@ export async function GET(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
 
-    console.log("Utilisateur authentifié:", user);
-
     // Seuls les admins peuvent voir les stats complètes
     if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });

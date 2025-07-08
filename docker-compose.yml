@@ -63,26 +63,17 @@ services:
     restart: unless-stopped
 
   menu-cms:
-    image: node:18-alpine
-    container_name: menu-cms
-    working_dir: /app
-    command: sh -c "npm install && npm run build && npm run start"
+    build:
+      context: ./menu-cms
     ports:
       - "3002:3002"
-    env_file:
-      - ./menu-cms/.env
     environment:
+      NODE_ENV: production
+      PORT: 3002
       AUTH_SERVICE_URL: http://auth:3001
-      KITCHEN_SERVICE_URL: http://kitchen:5000
-      DELIVERY_SERVICE_URL: http://delivery:3333
-      COMMAND_SERVICE_URL: http://command:5002
-      RABBIT_MQ_URL: http://rabbitmq:15672
-    volumes:
-      - ./menu-cms:/app
-      - /app/node_modules
+    restart: unless-stopped
     depends_on:
       - auth
-    restart: unless-stopped
     
   kitchen:
     build:

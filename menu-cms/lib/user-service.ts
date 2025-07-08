@@ -25,7 +25,7 @@ export class UserService {
 
   // Login
   static async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(`${process.env.AUTH_SERVICE_URL}/login`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -57,7 +57,7 @@ export class UserService {
       // Révoquer le refresh token côté serveur si possible
       if (refreshToken) {
         try {
-          await fetch(`${process.env.AUTH_SERVICE_URL}/logout`, {
+          await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/logout`, {
             method: "POST",
             headers: this.getAuthHeaders(),
             body: JSON.stringify({ refreshToken }),
@@ -76,7 +76,7 @@ export class UserService {
 
   // Créer un utilisateur (register via l'API)
   static async createUser(data: CreateUserData): Promise<User> {
-    const response = await fetch(`${process.env.AUTH_SERVICE_URL}/register`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/register`, {
       method: "POST",
       headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
@@ -92,7 +92,7 @@ export class UserService {
 
   // Récupérer tous les utilisateurs (nécessite une API étendue)
   static async getUsers(): Promise<User[]> {
-    const response = await fetch(`${process.env.AUTH_SERVICE_URL}/users`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users`, {
       headers: this.getAuthHeaders(),
     });
 
@@ -110,7 +110,7 @@ export class UserService {
 
   // Récupérer un utilisateur par ID
   static async getUser(id: string): Promise<User> {
-    const response = await fetch(`${process.env.AUTH_SERVICE_URL}/users/${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users/${id}`, {
       headers: this.getAuthHeaders(),
     });
 
@@ -123,7 +123,7 @@ export class UserService {
 
   // Mettre à jour un utilisateur
   static async updateUser(id: string, data: UpdateUserData): Promise<User> {
-    const response = await fetch(`${process.env.AUTH_SERVICE_URL}/users/${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users/${id}`, {
       method: "PUT",
       headers: this.getAuthHeaders(),
       body: JSON.stringify(data),
@@ -141,7 +141,7 @@ export class UserService {
 
   // Supprimer un utilisateur
   static async deleteUser(id: string): Promise<void> {
-    const response = await fetch(`${process.env.AUTH_SERVICE_URL}/users/${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users/${id}`, {
       method: "DELETE",
       headers: this.getAuthHeaders(),
     });
@@ -156,7 +156,7 @@ export class UserService {
 
   // Récupérer l'utilisateur connecté
   static async getCurrentUser(): Promise<User> {
-    const response = await fetch(`${process.env.AUTH_SERVICE_URL}/me`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/me`, {
       headers: this.getAuthHeaders(),
     });
 
@@ -181,7 +181,7 @@ export class UserService {
       throw new Error("Aucun refresh token disponible");
     }
 
-    const response = await fetch(`${process.env.AUTH_SERVICE_URL}/refresh`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
@@ -220,7 +220,7 @@ export class UserService {
   // Révoquer toutes les sessions d'un utilisateur
   static async revokeAllSessions(userId: string): Promise<void> {
     const response = await fetch(
-      `${process.env.AUTH_SERVICE_URL}/users/${userId}/revoke-sessions`,
+      `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users/${userId}/revoke-sessions`,
       {
         method: "POST",
         headers: this.getAuthHeaders(),
@@ -237,7 +237,7 @@ export class UserService {
     currentPassword: string,
     newPassword: string
   ): Promise<void> {
-    const response = await fetch(`${process.env.AUTH_SERVICE_URL}/change-password`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/change-password`, {
       method: "POST",
       headers: this.getAuthHeaders(),
       body: JSON.stringify({ currentPassword, newPassword }),

@@ -9,7 +9,8 @@ class ApiClient {
   }> = [];
 
   constructor(
-    baseURL: string = process.env.AUTH_SERVICE_URL || "http://localhost:3001"
+    baseURL: string = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ||
+      "http://localhost:3001"
   ) {
     this.axiosInstance = axios.create({
       baseURL,

@@ -96,7 +96,7 @@ export default function UsersPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.AUTH_SERVICE_URL}/users`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users`, {
         headers: {
           Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
           "Content-Type": "application/json",
@@ -141,7 +141,7 @@ export default function UsersPage() {
 
     setSubmitting(true);
     try {
-      const response = await fetch(`${process.env.AUTH_SERVICE_URL}/users`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
@@ -186,7 +186,7 @@ export default function UsersPage() {
       }
 
       const response = await fetch(
-        `${process.env.AUTH_SERVICE_URL}/users/${selectedUser.id}`,
+        `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users/${selectedUser.id}`,
         {
           method: "PUT",
           headers: {
@@ -221,7 +221,7 @@ export default function UsersPage() {
     setSubmitting(true);
     try {
       const response = await fetch(
-        `${process.env.AUTH_SERVICE_URL}/users/${selectedUser.id}`,
+        `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users/${selectedUser.id}`,
         {
           method: "DELETE",
           headers: {
@@ -259,7 +259,7 @@ export default function UsersPage() {
     setSubmitting(true);
     try {
       const response = await fetch(
-        `${process.env.AUTH_SERVICE_URL}/users/${selectedUser.id}`,
+        `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/users/${selectedUser.id}`,
         {
           method: "PUT",
           headers: {

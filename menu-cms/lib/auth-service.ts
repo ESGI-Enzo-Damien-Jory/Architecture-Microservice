@@ -1,23 +1,23 @@
 import { AuthResponse, User } from "@/types/auth";
 
+const BASE_URL = typeof window === 'undefined'
+  ? process.env.AUTH_SERVICE_URL     // runtime Docker
+  : process.env.NEXT_PUBLIC_AUTH_SERVICE_URL; // client-bundle
+
 export class AuthService {
   private static async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const response = await fetch(`${process.env.AUTH_SERVICE_URL}${endpoint}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+    const url = `${BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
+      headers: { "Content-Type": "application/json", ...options.headers },
       ...options,
     });
-
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || "Une erreur est survenue");
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || "Une erreur est survenue");
     }
-
     return response.json();
   }
 

@@ -40,31 +40,31 @@ interface ServiceStatus {
 const SERVICES = [
   {
     name: "Auth Service",
-    url: `${process.env.AUTH_SERVICE_URL}/health`,
+    url: `${process.env.NEXT_PUBLIC_AUTH_SERVICE_URL}/health`,
     icon: Server,
     port: "3001",
   },
   {
     name: "Kitchen Service",
-    url: `${process.env.KITCHEN_SERVICE_URL}/health`,
+    url: `${process.env.NEXT_PUBLIC_KITCHEN_SERVICE_URL}/health`,
     icon: ForkKnife,
     port: "5003",
   },
   {
     name: "Delivery Service",
-    url: `${process.env.DELIVERY_SERVICE_URL}/health`,
+    url: `${process.env.NEXT_PUBLIC_DELIVERY_SERVICE_URL}/health`,
     icon: Truck,
     port: "3333",
   },
   {
     name: "Command Service",
-    url: `${process.env.COMMAND_SERVICE_URL}/health`,
+    url: `${process.env.NEXT_PUBLIC_COMMAND_SERVICE_URL}/health`,
     icon: PackageCheck,
     port: "5002",
   },
   {
     name: "RabbitMQ",
-    url: `${process.env.RABBIT_MQ_URL}/api/overview`,
+    url: `${process.env.NEXT_PUBLIC_RABBIT_MQ_URL}/api/overview`,
     icon: MessageSquare,
     port: "15672",
     auth: { username: "admin", password: "supersecret" },
@@ -129,7 +129,6 @@ export default function AdminDashboard() {
 
   // Fonction pour checker tous les services
   const checkAllServices = useCallback(async () => {
-    console.log("🔍 Démarrage health check...");
     setLastCheck(new Date());
 
     try {
@@ -137,7 +136,6 @@ export default function AdminDashboard() {
       const promises = SERVICES.map((service) => checkService(service));
       const results = await Promise.all(promises);
 
-      console.log("✅ Health check terminé:", results);
       setServices(results);
     } catch (error) {
       console.error("❌ Erreur health check:", error);
@@ -183,12 +181,10 @@ export default function AdminDashboard() {
 
     // Auto refresh toutes les 30 secondes
     const interval = setInterval(() => {
-      console.log("⏰ Auto refresh services");
       checkAllServices();
     }, 30000);
 
     return () => {
-      console.log("🧹 Cleanup interval");
       clearInterval(interval);
     };
   }, [checkAllServices]);
