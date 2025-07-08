@@ -2,3 +2,5 @@ secrets/private.pem
 **/dist
 .idea
 **/node_modules
+**/.env
+**/.env.local
