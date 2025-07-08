@@ -39,7 +39,7 @@ export function AuthGuard({ children, fallback }: AuthGuardProps) {
                 Chargement...
               </CardTitle>
               <CardDescription>
-                Vérification de l'authentification
+                Vérification de l&apos;authentification
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -55,7 +55,7 @@ export default function AdminLayout({
 
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-500">
-                  Connecté en tant qu'administrateur
+                  Connecté en tant qu&apos;administrateur
                 </span>
 
                 <DropdownMenu>
