@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MenuType {
+  STANDARD     // Ex : « Menu Big Mac »
+  LIMITED      // Ex : formule édition limitée
+}
+
+model ProductCategory {
+  id        String    @id @default(uuid())
+  name      String
+  position  Int       @default(0)
+  products  Product[]
+}
+
+model Product {
+  id           String            @id @default(uuid())
+  name         String
+  description  String?
+  priceCents   Int               // en centimes
+  available    Boolean    @default(true)
+  imageUrl     String?
+  position     Int               @default(0)
+  category     ProductCategory   @relation(fields: [categoryId], references: [id])
+  categoryId   String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  menuProducts MenuProduct[]
+}
+
+model Menu {
+  id           String         @id @default(uuid())
+  name         String         // « Menu Big Mac », « Menu McChicken »,…
+  description  String?
+  priceCents   Int            // prix de la formule
+  type         MenuType  @default(STANDARD)
+  available    Boolean    @default(true)
+  imageUrl     String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  menuProducts MenuProduct[]
+}
+
+model MenuProduct {
+  id         String   @id @default(uuid())
+  menu       Menu     @relation(fields: [menuId], references: [id])
+  menuId     String
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@unique([menuId, productId])
+}
