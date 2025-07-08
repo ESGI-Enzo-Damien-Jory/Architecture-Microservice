@@ -29,6 +29,7 @@ const navigation = [
   { name: "Catégories", href: "/admin/categories", icon: FolderOpen },
   { name: "Produits", href: "/admin/products", icon: Package },
   { name: "Menus", href: "/admin/menus", icon: MenuIcon },
+  { name: "Utilisateurs", href: "/admin/users", icon: Settings },
 ];
 
 export default function AdminLayout({

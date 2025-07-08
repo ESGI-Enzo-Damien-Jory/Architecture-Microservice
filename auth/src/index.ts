@@ -7,6 +7,7 @@ import refresh from "./routes/refresh";
 import verify from "./routes/verify";
 import me from "./routes/me";
 import health from "./routes/health";
+import users from "./routes/users";
 import { RefreshTokenService } from "./lib/refresh-token-service";
 
 dotenv.config();
@@ -33,6 +34,7 @@ app.use("/login", login);
 app.use("/refresh", refresh);
 app.use("/verify", verify);
 app.use("/me", me);
+app.use("/users", users);
 
 app.get("/", (req, res) => {
   res.json({ service: "auth", status: "running" });
