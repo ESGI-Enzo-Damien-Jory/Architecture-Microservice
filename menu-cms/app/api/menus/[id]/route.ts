@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 // GET /api/menus/[id] - Récupérer un menu par ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params pour Next.js 15+
+    const { id } = await params;
+
     const menu = await prisma.menu.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         menuProducts: {
           include: {
@@ -41,9 +44,12 @@ export async function GET(
 // PUT /api/menus/[id] - Mettre à jour un menu
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params pour Next.js 15+
+    const { id } = await params;
+
     const body = await request.json();
     const {
       name,
@@ -57,7 +63,7 @@ export async function PUT(
 
     // Vérifier que le menu existe
     const existingMenu = await prisma.menu.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingMenu) {
@@ -89,7 +95,7 @@ export async function PUT(
     }
 
     // Préparer les données de mise à jour
-    const updateData: PrismaClient['menu']['update']['arguments']['data'] = {};
+    const updateData: Prisma.MenuUpdateInput = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (priceCents !== undefined) updateData.priceCents = priceCents;
@@ -101,7 +107,7 @@ export async function PUT(
     if (productIds !== undefined) {
       // Supprimer les anciennes relations
       await prisma.menuProduct.deleteMany({
-        where: { menuId: params.id },
+        where: { menuId: id },
       });
 
       // Créer les nouvelles relations
@@ -116,7 +122,7 @@ export async function PUT(
 
     // Mettre à jour le menu
     const menu = await prisma.menu.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         menuProducts: {
@@ -144,12 +150,15 @@ export async function PUT(
 // DELETE /api/menus/[id] - Supprimer un menu
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params pour Next.js 15+
+    const { id } = await params;
+
     // Vérifier que le menu existe
     const existingMenu = await prisma.menu.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingMenu) {
@@ -158,12 +167,12 @@ export async function DELETE(
 
     // Supprimer les relations produits en premier (cascade)
     await prisma.menuProduct.deleteMany({
-      where: { menuId: params.id },
+      where: { menuId: id },
     });
 
     // Supprimer le menu
     await prisma.menu.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Menu supprimé avec succès" });

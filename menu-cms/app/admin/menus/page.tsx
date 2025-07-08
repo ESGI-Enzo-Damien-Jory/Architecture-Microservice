@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -571,9 +572,16 @@ export default function MenusPage() {
                   <div className="flex items-center space-x-4">
                     {menu.imageUrl && (
                       <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted">
-                        <img
+                        {/* <img
                           src={menu.imageUrl}
                           alt={menu.name}
+                          className="w-full h-full object-cover"
+                        /> */}
+                        <Image
+                          src={menu.imageUrl}
+                          alt={menu.name}
+                          width={80}
+                          height={80}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -768,7 +776,7 @@ export default function MenusPage() {
             </div>
 
             <div className="col-span-2">
-              <Label htmlFor="edit-imageUrl">URL de l&apos;image</Label>
+              <Label htmlFor="edit-imageUrl">URL de limage</Label>
               <Input
                 id="edit-imageUrl"
                 value={formData.imageUrl}

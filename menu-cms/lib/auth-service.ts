@@ -1,14 +1,11 @@
 import { AuthResponse, User } from "@/types/auth";
 
-const AUTH_BASE_URL =
-  process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:3001";
-
 export class AuthService {
   private static async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const response = await fetch(`${AUTH_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${process.env.AUTH_SERVICE_URL}${endpoint}`, {
       headers: {
         "Content-Type": "application/json",
         ...options.headers,

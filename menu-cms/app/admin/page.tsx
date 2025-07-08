@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -40,31 +40,31 @@ interface ServiceStatus {
 const SERVICES = [
   {
     name: "Auth Service",
-    url: "http://localhost:3001/health",
+    url: `${process.env.AUTH_SERVICE_URL}/health`,
     icon: Server,
     port: "3001",
   },
   {
     name: "Kitchen Service",
-    url: "http://localhost:5003/health",
+    url: `${process.env.KITCHEN_SERVICE_URL}/health`,
     icon: ForkKnife,
     port: "5003",
   },
   {
     name: "Delivery Service",
-    url: "http://localhost:3333/health",
+    url: `${process.env.DELIVERY_SERVICE_URL}/health`,
     icon: Truck,
     port: "3333",
   },
   {
     name: "Command Service",
-    url: "http://localhost:5002/health",
+    url: `${process.env.COMMAND_SERVICE_URL}/health`,
     icon: PackageCheck,
     port: "5002",
   },
   {
     name: "RabbitMQ",
-    url: "http://localhost:15672/api/overview",
+    url: `${process.env.RABBIT_MQ_URL}/api/overview`,
     icon: MessageSquare,
     port: "15672",
     auth: { username: "admin", password: "supersecret" },
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
   };
 
   // Fonction pour checker tous les services
-  const checkAllServices = async () => {
+  const checkAllServices = useCallback(async () => {
     console.log("🔍 Démarrage health check...");
     setLastCheck(new Date());
 
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("❌ Erreur health check:", error);
     }
-  };
+  }, []);
 
   // Manual refresh
   const handleRefresh = async () => {
@@ -191,7 +191,7 @@ export default function AdminDashboard() {
       console.log("🧹 Cleanup interval");
       clearInterval(interval);
     };
-  }, []);
+  }, [checkAllServices]);
 
   // Helpers
   const getStatusIcon = (status: ServiceStatus["status"]) => {

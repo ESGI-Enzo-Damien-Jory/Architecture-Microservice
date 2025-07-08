@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 // POST /api/menus/[id]/products - Ajouter un produit à un menu
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json();
@@ -19,9 +19,12 @@ export async function POST(
       );
     }
 
+    // Await params pour Next.js 15+
+    const { id } = await params;
+
     // Vérifier que le menu existe
     const menu = await prisma.menu.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!menu) {
@@ -44,7 +47,7 @@ export async function POST(
     const existingRelation = await prisma.menuProduct.findUnique({
       where: {
         menuId_productId: {
-          menuId: params.id,
+          menuId: id,
           productId,
         },
       },
@@ -60,7 +63,7 @@ export async function POST(
     // Créer la relation
     const menuProduct = await prisma.menuProduct.create({
       data: {
-        menuId: params.id,
+        menuId: id,
         productId,
       },
       include: {

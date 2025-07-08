@@ -4,7 +4,7 @@ import { verifyAuth } from "@/lib/auth-helper";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await verifyAuth(request);
@@ -13,8 +13,11 @@ export async function GET(
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
+    // Await params pour Next.js 15+
+    const { id } = await params;
+
     const product = await prisma.product.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         category: true,
         menuProducts: {
@@ -44,7 +47,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await verifyAuth(request);
@@ -52,6 +55,9 @@ export async function PUT(
     if (!user || user.role !== "admin") {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
+
+    // Await params pour Next.js 15+
+    const { id } = await params;
 
     const body = await request.json();
     const {
@@ -66,7 +72,7 @@ export async function PUT(
 
     // Vérifier que le produit existe
     const existingProduct = await prisma.product.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingProduct) {
@@ -90,7 +96,15 @@ export async function PUT(
       }
     }
 
-    const updateData: any = {};
+    const updateData: Partial<{
+      name?: string;
+      description?: string;
+      priceCents?: number;
+      categoryId?: string;
+      available?: boolean;
+      imageUrl?: string;
+      position?: number;
+    }> = {};
 
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
@@ -101,7 +115,7 @@ export async function PUT(
     if (position !== undefined) updateData.position = position;
 
     const product = await prisma.product.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...updateData,
         updatedAt: new Date(),
@@ -123,7 +137,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await verifyAuth(request);
@@ -132,9 +146,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
+    // Await params pour Next.js 15+
+    const { id } = await params;
+
     // Vérifier que le produit existe
     const existingProduct = await prisma.product.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         menuProducts: true,
       },
@@ -160,7 +177,7 @@ export async function DELETE(
     }
 
     await prisma.product.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });

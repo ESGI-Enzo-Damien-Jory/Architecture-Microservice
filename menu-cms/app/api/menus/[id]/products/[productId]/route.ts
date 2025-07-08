@@ -6,15 +6,18 @@ const prisma = new PrismaClient();
 // DELETE /api/menus/[id]/products/[productId] - Retirer un produit d'un menu
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; productId: string } }
+  { params }: { params: Promise<{ id: string; productId: string }> }
 ) {
   try {
+    // Await params pour Next.js 15+
+    const { id, productId } = await params;
+
     // Vérifier que la relation existe
     const existingRelation = await prisma.menuProduct.findUnique({
       where: {
         menuId_productId: {
-          menuId: params.id,
-          productId: params.productId,
+          menuId: id,
+          productId: productId,
         },
       },
     });
@@ -30,8 +33,8 @@ export async function DELETE(
     await prisma.menuProduct.delete({
       where: {
         menuId_productId: {
-          menuId: params.id,
-          productId: params.productId,
+          menuId: id,
+          productId: productId,
         },
       },
     });

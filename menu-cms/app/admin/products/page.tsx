@@ -43,6 +43,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import Image from "next/image";
 import { ProductService } from "@/lib/product-service";
 import { CategoryService } from "@/lib/category-service";
 import { Product } from "@/types/product";
@@ -641,13 +642,15 @@ export default function ProductsPage() {
                   <div className="flex flex-col space-y-1">
                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
                   </div>
-
                   {product.imageUrl && (
                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted">
-                      <img
+                      <Image
                         src={product.imageUrl}
                         alt={product.name}
+                        width={64}
+                        height={64}
                         className="w-full h-full object-cover"
+                        unoptimized
                       />
                     </div>
                   )}

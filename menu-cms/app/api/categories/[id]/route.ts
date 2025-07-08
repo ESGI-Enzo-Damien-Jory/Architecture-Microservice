@@ -5,7 +5,7 @@ import { verifyAuth } from "@/lib/auth-helper";
 // GET /api/categories/[id] - Récupérer une catégorie
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await verifyAuth(request);
@@ -14,8 +14,11 @@ export async function GET(
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
+    // Await params pour Next.js 15+
+    const { id } = await params;
+
     const category = await prisma.productCategory.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         products:
           user.role === "admin"
@@ -46,7 +49,7 @@ export async function GET(
 // PUT /api/categories/[id] - Modifier une catégorie
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await verifyAuth(request);
@@ -62,9 +65,12 @@ export async function PUT(
     const body = await request.json();
     const { name, position } = body;
 
+    // Await params pour Next.js 15+
+    const { id } = await params;
+
     // Vérifier que la catégorie existe
     const existingCategory = await prisma.productCategory.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingCategory) {
@@ -75,7 +81,7 @@ export async function PUT(
     }
 
     const category = await prisma.productCategory.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(position !== undefined && { position }),
@@ -98,7 +104,7 @@ export async function PUT(
 // DELETE /api/categories/[id] - Supprimer une catégorie
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await verifyAuth(request);
@@ -111,9 +117,12 @@ export async function DELETE(
       );
     }
 
+    // Await params pour Next.js 15+
+    const { id } = await params;
+
     // Vérifier que la catégorie existe
     const existingCategory = await prisma.productCategory.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { products: true },
     });
 
@@ -135,7 +144,7 @@ export async function DELETE(
     }
 
     await prisma.productCategory.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Catégorie supprimée avec succès" });
