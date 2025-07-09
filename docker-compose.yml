@@ -154,6 +154,7 @@ services:
       DB_DATABASE: delivery
       
       AUTH_SERVICE_URL: http://auth:3001
+      RABBITMQ_URL: amqp://admin:supersecret@rabbitmq:5672/
     ports:
       - '3333:3333'
     volumes:

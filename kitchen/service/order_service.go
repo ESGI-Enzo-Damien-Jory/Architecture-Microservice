@@ -1,3 +1,4 @@
+// kitchen/service/order_service.go
 package service
 
 import (
@@ -8,50 +9,43 @@ import (
 	"github.com/google/uuid"
 )
 
-var orders = make(map[string]model.Order)
 
 func CreateOrder(item string) model.Order {
-	id := uuid.New().String()
+	return CreateOrderWithID("", item)
+}
+
+func CreateOrderWithID(id, item string) model.Order {
+	if id == "" {
+		id = uuid.New().String()
+	}
+	
 	order := model.Order{
 		ID:     id,
 		Item:   item,
 		Status: "received",
 	}
-	orders[id] = order
-	log.Printf("[SERVICE] Order created: %+v", order)
+	
+	log.Printf("[SERVICE] Kitchen order created with ID %s: %+v", id, order)
 	return order
 }
 
+// These functions now delegate to the queue package to avoid import cycles
 func GetOrder(id string) (model.Order, error) {
-	order, exists := orders[id]
-	if !exists {
-		log.Printf("[SERVICE] Order %s not found", id)
-		return model.Order{}, errors.New("order not found")
-	}
-	log.Printf("[SERVICE] Order found: %+v", order)
-	return order, nil
+	log.Printf("[SERVICE] GetOrder called for ID: %s", id)
+	return model.Order{}, errors.New("use queue.GetOrder instead")
 }
 
 func UpdateOrderStatus(id, status string) (model.Order, error) {
-	order, exists := orders[id]
-	if !exists {
-		log.Printf("[SERVICE] Order %s not found for status update", id)
-		return model.Order{}, errors.New("order not found")
-	}
-	
-	log.Printf("[SERVICE] Updating order %s from status %s to %s", id, order.Status, status)
-	order.Status = status
-	orders[id] = order
-	log.Printf("[SERVICE] Order updated: %+v", order)
-	
-	return order, nil
+	log.Printf("[SERVICE] UpdateOrderStatus called for ID: %s, status: %s", id, status)
+	return model.Order{}, errors.New("use queue.UpdateOrderStatus instead")
 }
 
 func ListOrders() []model.Order {
-	orderList := []model.Order{}
-	for _, order := range orders {
-		orderList = append(orderList, order)
-	}
-	log.Printf("[SERVICE] Listed %d orders", len(orderList))
-	return orderList
+	log.Printf("[SERVICE] ListOrders called")
+	return []model.Order{}
+}
+
+func GetOrdersByStatus(status string) []model.Order {
+	log.Printf("[SERVICE] GetOrdersByStatus called for status: %s", status)
+	return []model.Order{}
 }

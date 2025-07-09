@@ -2,6 +2,7 @@ package config
 
 import (
 	handler "kitchen/handlers"
+	"kitchen/middleware"
 	"os"
 	"time"
 
@@ -12,13 +13,7 @@ import (
 var startTime = time.Now()
 
 func SetupRoutes(app *fiber.App) {
-	api := app.Group("/api")
-
-	api.Post("/orders", handler.CreateOrder)
-	api.Get("/orders/:id", handler.GetOrder)
-	api.Patch("/orders/:id/status", handler.UpdateOrderStatus)
-	api.Get("/orders", handler.ListOrders)
-
+	// Health check (no auth required)
 	app.Get("/health", func(c *fiber.Ctx) error {
 		healthData := fiber.Map{
 			"status":    "healthy",
@@ -41,6 +36,32 @@ func SetupRoutes(app *fiber.App) {
 
 		return c.JSON(healthData)
 	})
+
+	// API routes with authentication
+	api := app.Group("/api", middleware.VerifyJWT)
+
+	// Kitchen order management (for cooks and admins only)
+	orders := api.Group("/orders", middleware.RequireRole("cook", "admin"))
+	
+	// Get all kitchen orders
+	orders.Get("/", handler.ListOrders)
+	
+	// Get pending orders (need cook action)
+	orders.Get("/pending", handler.GetPendingOrders)
+	
+	// Get orders in preparation
+	orders.Get("/preparing", handler.GetPreparingOrders)
+	
+	// Get specific order
+	orders.Get("/:id", handler.GetOrder)
+	
+	// Update order status (general)
+	orders.Patch("/:id/status", handler.UpdateOrderStatus)
+	
+	// Specific cook actions
+	orders.Post("/:id/confirm", handler.ConfirmOrder)
+	orders.Post("/:id/start-preparation", handler.StartPreparation)
+	orders.Post("/:id/mark-ready", handler.MarkOrderReady)
 }
 
 func testRabbitMQ() bool {

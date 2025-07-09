@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "434fbeeb-f29a-471c-8314-3503d39c20cc",
-		"name": "AMS",
+		"name": "AMS - Updated",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "45035265",
 		"_collection_link": "https://jaden38.postman.co/workspace/Jaden38's-Workspace~7dc757c0-55f3-42d4-8d66-7089d7a457b5/collection/45035265-434fbeeb-f29a-471c-8314-3503d39c20cc?action=share&source=collection_link&creator=45035265"
@@ -105,6 +105,38 @@
 						"body": {
 							"mode": "raw",
 							"raw": "{\r\n    \"email\": \"deliveryman@gmail.com\",\r\n    \"password\": \"pass123\",\r\n    \"role\": \"delivery\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/register",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"admin@example.com\",\r\n    \"password\": \"pass123\",\r\n    \"role\": \"admin\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -272,6 +304,55 @@
 					"response": []
 				},
 				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.globals.set('admin_access_token', response.accessToken);",
+									"    pm.globals.set('admin_refresh_token', response.refreshToken);",
+									"    pm.globals.set('admin_user_id', response.user.id);",
+									"    console.log('Admin tokens stored successfully');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"admin@example.com\",\r\n    \"password\": \"pass123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/login",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Refresh Token",
 					"request": {
 						"method": "POST",
@@ -358,6 +439,248 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{client_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:3001/profile",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{client_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"Jean\",\r\n    \"lastName\": \"Dupont\",\r\n    \"phone\": \"0123456789\",\r\n    \"address\": \"123 rue de la Paix\",\r\n    \"city\": \"Paris\",\r\n    \"zipCode\": \"75001\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/profile",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users - Admin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:3001/users",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User - Admin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"newuser@example.com\",\r\n    \"password\": \"pass123\",\r\n    \"role\": \"client\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/users",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User - Admin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"updated@example.com\",\r\n    \"role\": \"cook\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/users/{{user_id}}",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User - Admin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "localhost:3001/users/{{user_id}}",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke User Sessions - Admin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "localhost:3001/users/{{user_id}}/revoke-sessions",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"users",
+								"{{user_id}}",
+								"revoke-sessions"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -370,12 +693,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5002/health",
+							"raw": "http://localhost:5000/health",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"health"
 							]
@@ -389,18 +712,33 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5002",
+							"raw": "http://localhost:5000",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002"
+							"port": "5000"
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Create Order - Client",
+					"name": "Create Multi-Item Order - Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.globals.set('order_id', response.order_id);",
+									"    console.log('Order ID stored:', response.order_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -421,7 +759,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"product\": \"Pizza Margherita\",\n  \"quantity\": 2\n}",
+							"raw": "{\n  \"items\": [\n    {\n      \"type\": \"product\",\n      \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"quantity\": 2,\n      \"price\": 1500\n    },\n    {\n      \"type\": \"menu\",\n      \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n      \"quantity\": 1,\n      \"price\": 2500\n    }\n  ],\n  \"notes\": \"Extra sauce please\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -429,12 +767,12 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:5002/api/orders",
+							"raw": "http://localhost:5000/api/orders",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders"
@@ -444,7 +782,7 @@
 					"response": []
 				},
 				{
-					"name": "Create Order - Burger",
+					"name": "Create Simple Order - Client",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -465,7 +803,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"product\": \"Burger Classic\",\n  \"quantity\": 1\n}",
+							"raw": "{\n  \"items\": [\n    {\n      \"type\": \"product\",\n      \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n      \"quantity\": 1,\n      \"price\": 1200\n    }\n  ],\n  \"notes\": \"No onions\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -473,12 +811,12 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:5002/api/orders",
+							"raw": "http://localhost:5000/api/orders",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders"
@@ -503,12 +841,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5002/api/orders",
+							"raw": "http://localhost:5000/api/orders",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders"
@@ -533,12 +871,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5002/api/orders",
+							"raw": "http://localhost:5000/api/orders",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders"
@@ -563,12 +901,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5002/api/orders",
+							"raw": "http://localhost:5000/api/orders",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders"
@@ -593,16 +931,16 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5002/api/orders/ord-001",
+							"raw": "http://localhost:5000/api/orders/{{order_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders",
-								"ord-001"
+								"{{order_id}}"
 							]
 						}
 					},
@@ -638,16 +976,16 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:5002/api/orders/ord-001/status",
+							"raw": "http://localhost:5000/api/orders/{{order_id}}/status",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders",
-								"ord-001",
+								"{{order_id}}",
 								"status"
 							]
 						}
@@ -684,16 +1022,16 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:5002/api/orders/ord-001/status",
+							"raw": "http://localhost:5000/api/orders/{{order_id}}/status",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders",
-								"ord-001",
+								"{{order_id}}",
 								"status"
 							]
 						}
@@ -730,16 +1068,16 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:5002/api/orders/ord-001/status",
+							"raw": "http://localhost:5000/api/orders/{{order_id}}/status",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders",
-								"ord-001",
+								"{{order_id}}",
 								"status"
 							]
 						}
@@ -747,46 +1085,62 @@
 					"response": []
 				},
 				{
-					"name": "Update Order Status - Delivered",
+					"name": "Get All Orders - Admin",
 					"request": {
 						"auth": {
 							"type": "bearer",
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{delivery_access_token}}",
+									"value": "{{admin_access_token}}",
 									"type": "string"
 								}
 							]
 						},
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"status\": \"delivered\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
+						"method": "GET",
+						"header": [],
 						"url": {
-							"raw": "http://localhost:5002/api/orders/ord-001/status",
+							"raw": "http://localhost:5000/api/admin/orders",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5002",
+							"port": "5000",
 							"path": [
 								"api",
-								"orders",
-								"ord-001",
-								"status"
+								"admin",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order Stats - Admin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/admin/stats",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"admin",
+								"stats"
 							]
 						}
 					},
@@ -803,12 +1157,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5003/health",
+							"raw": "http://localhost:5000/health",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5003",
+							"port": "5000",
 							"path": [
 								"health"
 							]
@@ -817,17 +1171,17 @@
 					"response": []
 				},
 				{
-					"name": "Get Orders",
+					"name": "Get All Kitchen Orders",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5003/api/orders",
+							"raw": "http://localhost:5000/api/orders",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5003",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders"
@@ -837,28 +1191,178 @@
 					"response": []
 				},
 				{
-					"name": "Get Order by ID",
+					"name": "Get Pending Orders",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5003/api/orders/1",
+							"raw": "http://localhost:5000/api/orders/pending",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5003",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders",
-								"1"
+								"pending"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "Update Order Status",
+					"name": "Get Preparing Orders",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/orders/preparing",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"orders",
+								"preparing"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Kitchen Order by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/api/orders/{{order_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"orders",
+								"{{order_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Confirm Order - Cook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/orders/{{order_id}}/confirm",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"orders",
+								"{{order_id}}",
+								"confirm"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Start Preparation - Cook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/orders/{{order_id}}/start-preparation",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"orders",
+								"{{order_id}}",
+								"start-preparation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Order Ready - Cook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/orders/{{order_id}}/mark-ready",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"orders",
+								"{{order_id}}",
+								"mark-ready"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Kitchen Order Status",
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -869,7 +1373,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"status\": \"ready\"\n}",
+							"raw": "{\n  \"status\": \"preparing\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -877,16 +1381,16 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:5003/api/orders/1/status",
+							"raw": "http://localhost:5000/api/orders/{{order_id}}/status",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5003",
+							"port": "5000",
 							"path": [
 								"api",
 								"orders",
-								"1",
+								"{{order_id}}",
 								"status"
 							]
 						}
@@ -918,7 +1422,36 @@
 					"response": []
 				},
 				{
-					"name": "Get Deliveries",
+					"name": "Get Deliveries - Client",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{client_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3333/deliveries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"deliveries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Deliveries - Delivery Person",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -947,8 +1480,92 @@
 					"response": []
 				},
 				{
-					"name": "Create Delivery",
+					"name": "Get All Deliveries - Admin",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3333/deliveries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"deliveries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Delivery by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{delivery_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3333/deliveries/{{delivery_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"deliveries",
+								"{{delivery_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Delivery - Delivery Person",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.globals.set('delivery_id', response.delivery.id);",
+									"    console.log('Delivery ID stored:', response.delivery.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{delivery_access_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "POST",
 						"header": [
 							{
@@ -958,7 +1575,142 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"order_id\": \"order-12345\"\r\n}",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3333/deliveries/{{order_id}}/accept",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"deliveries",
+								"{{order_id}}",
+								"accept"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Start Delivery - Delivery Person",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{delivery_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3333/deliveries/{{delivery_id}}/start",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"deliveries",
+								"{{delivery_id}}",
+								"start"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Delivery - Delivery Person",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{delivery_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3333/deliveries/{{delivery_id}}/complete",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"deliveries",
+								"{{delivery_id}}",
+								"complete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Delivery - Manual",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"order_id\": \"{{order_id}}\",\r\n  \"client_id\": \"{{client_user_id}}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -980,9 +1732,19 @@
 					"response": []
 				},
 				{
-					"name": "Update Delivery",
+					"name": "Update Delivery Status - Admin",
 					"request": {
-						"method": "PATCH",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
 						"header": [
 							{
 								"key": "Content-Type",
@@ -991,7 +1753,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"status\": \"reserved\"\r\n}",
+							"raw": "{\r\n  \"status\": \"available\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -999,7 +1761,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:3333/deliveries/3",
+							"raw": "http://localhost:3333/deliveries/{{delivery_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1007,7 +1769,37 @@
 							"port": "3333",
 							"path": [
 								"deliveries",
-								"3"
+								"{{delivery_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Delivery - Admin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3333/deliveries/{{delivery_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"deliveries",
+								"{{delivery_id}}"
 							]
 						}
 					},

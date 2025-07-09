@@ -1,3 +1,4 @@
+// order/main.go
 package main
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"order/config"
+	"order/queue"
 	"order/routes"
 )
 
@@ -24,6 +26,9 @@ func main() {
 	defer config.RabbitMQConn.Close()
 	defer config.RabbitMQChannel.Close()
 
+	// Start all kitchen message consumers
+	go queue.StartKitchenConfirmationConsumer()
+
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -36,7 +41,7 @@ func main() {
 		},
 	})
 
-	// Add CORS middleware - FIXED: Added POST, PUT, PATCH, DELETE methods
+	// Add CORS middleware
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:3000,http://localhost:3002",
 		AllowMethods:     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
@@ -54,5 +59,7 @@ func main() {
 	}
 
 	log.Printf("🚀 Order service starting on port %s", port)
+	log.Printf("📡 Kitchen confirmation consumer started")
+	log.Printf("📡 Kitchen status update consumer started")
 	log.Fatal(app.Listen(":" + port))
 }

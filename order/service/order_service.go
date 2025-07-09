@@ -3,6 +3,7 @@ package service
 
 import (
 	"encoding/json"
+	"log"
 	"order/config"
 	"order/model"
 	"order/repository"
@@ -20,7 +21,7 @@ type CreateItem struct {
 	Price    int // cents
 }
 
-// CreateOrder persists a new order + items then publishes an event.
+// CreateOrder persists a new order + items then publishes to kitchen_orders.
 func CreateOrder(userID string, items []CreateItem, notes *string) (string, error) {
 	orderID := uuid.NewString()
 	now := time.Now()
@@ -54,47 +55,135 @@ func CreateOrder(userID string, items []CreateItem, notes *string) (string, erro
 		return "", err
 	}
 
-	_ = publishEvent(order, "order_created")
+	log.Printf("📦 [ORDER] Order created: %s, sending to kitchen", orderID)
+	
+	// Send to kitchen_orders queue
+	if err := publishToKitchen(order); err != nil {
+		log.Printf("❌ [ORDER] Failed to send order to kitchen: %v", err)
+		// Don't fail the order creation if RabbitMQ fails
+	}
+
 	return orderID, nil
 }
 
-// UpdateOrderStatus updates status and publishes an event.
+// UpdateOrderStatus updates status and handles the workflow.
 func UpdateOrderStatus(id string, status model.OrderStatus) error {
 	if err := repository.UpdateOrderStatus(id, status); err != nil {
 		return err
 	}
-	o, err := repository.GetOrderById(id)
-	if err == nil {
-		_ = publishEvent(o, "order_status_updated")
+	
+	order, err := repository.GetOrderById(id)
+	if err != nil {
+		return err
 	}
+
+	log.Printf("📊 [ORDER] Order %s status updated to: %s", id, status)
+
+	// Handle status-specific logic
+	switch status {
+	case model.StatusConfirmed:
+		log.Printf("✅ [ORDER] Order %s confirmed by kitchen, sending to delivery", id)
+		if err := publishToDelivery(order); err != nil {
+			log.Printf("❌ [ORDER] Failed to send order to delivery: %v", err)
+		}
+	}
+
 	return nil
 }
 
-func publishEvent(o model.Order, evt string) error {
+// publishToKitchen sends the order to kitchen_orders queue
+func publishToKitchen(order model.Order) error {
 	if config.RabbitMQChannel == nil {
 		return nil
 	}
-	payload := map[string]interface{}{
-		"id":                  o.ID,
-		"user_id":             o.UserID,
-		"status":              o.Status,
-		"total_price_cents":   o.TotalPriceCents,
-		"created_at":          o.CreatedAt,
-		"updated_at":          o.UpdatedAt,
-		"items":               o.Items,
-		"event_type":          evt,
+
+	// Create a simplified message for kitchen
+	kitchenMessage := map[string]interface{}{
+		"id":         order.ID,
+		"user_id":    order.UserID,
+		"status":     string(order.Status),
+		"notes":      order.Notes,
+		"items":      order.Items,
+		"created_at": order.CreatedAt,
+		"event_type": "order_created",
+		"service":    "order",
 	}
-	body, _ := json.Marshal(payload)
-	return config.RabbitMQChannel.Publish(
-		"", "orders", false, false,
+
+	body, err := json.Marshal(kitchenMessage)
+	if err != nil {
+		return err
+	}
+
+	err = config.RabbitMQChannel.Publish(
+		"",              // exchange
+		"kitchen_orders", // routing key
+		false,           // mandatory
+		false,           // immediate
 		amqp091.Publishing{
 			ContentType: "application/json",
 			Body:        body,
 			Timestamp:   time.Now(),
 			Headers: amqp091.Table{
-				"event_type": evt,
+				"event_type": "order_created",
 				"service":    "order",
+				"order_id":   order.ID,
 			},
 		},
 	)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("📤 [ORDER] Order %s sent to kitchen", order.ID)
+	return nil
+}
+
+// publishToDelivery sends confirmed order to delivery_orders queue
+func publishToDelivery(order model.Order) error {
+	if config.RabbitMQChannel == nil {
+		return nil
+	}
+
+	// Create delivery message
+	deliveryMessage := map[string]interface{}{
+		"id":         order.ID,
+		"user_id":    order.UserID,
+		"status":     string(order.Status),
+		"notes":      order.Notes,
+		"items":      order.Items,
+		"created_at": order.CreatedAt,
+		"updated_at": order.UpdatedAt,
+		"event_type": "order_confirmed",
+		"service":    "order",
+	}
+
+	body, err := json.Marshal(deliveryMessage)
+	if err != nil {
+		return err
+	}
+
+	err = config.RabbitMQChannel.Publish(
+		"",               // exchange
+		"delivery_orders", // routing key
+		false,            // mandatory
+		false,            // immediate
+		amqp091.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+			Timestamp:   time.Now(),
+			Headers: amqp091.Table{
+				"event_type": "order_confirmed",
+				"service":    "order",
+				"order_id":   order.ID,
+			},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("📤 [ORDER] Order %s sent to delivery", order.ID)
+	return nil
 }
