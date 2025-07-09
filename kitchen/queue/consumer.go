@@ -1,11 +1,10 @@
-// kitchen/queue/consumer.go - Enhanced version
+// kitchen/queue/consumer.go - Corrections pour votre setup
 package queue
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -30,36 +29,36 @@ var globalChannel *amqp.Channel
 func ConsumeOrders() {
 	rabbitmqURL := os.Getenv("RABBITMQ_URL")
 	if rabbitmqURL == "" {
-		rabbitmqURL = "amqp://guest:guest@localhost:5672/"
+		rabbitmqURL = "amqp://admin:supersecret@rabbitmq:5672/"
 	}
 
 	// Retry connection logic
 	var conn *amqp.Connection
 	var err error
-	maxRetries := 10
+	maxRetries := 30 // Plus d'essais pour attendre RabbitMQ
 	retryDelay := 5 * time.Second
 
 	for i := 0; i < maxRetries; i++ {
-		log.Printf("🔄 Attempting to connect to RabbitMQ (attempt %d/%d)...", i+1, maxRetries)
+		log.Printf("🔄 [KITCHEN] Attempting to connect to RabbitMQ (attempt %d/%d)...", i+1, maxRetries)
 		conn, err = amqp.Dial(rabbitmqURL)
 		if err == nil {
-			log.Println("✅ Successfully connected to RabbitMQ")
+			log.Println("✅ [KITCHEN] Successfully connected to RabbitMQ")
 			break
 		}
-		log.Printf("❌ Failed to connect to RabbitMQ: %v", err)
+		log.Printf("❌ [KITCHEN] Failed to connect to RabbitMQ: %v", err)
 		if i < maxRetries-1 {
-			log.Printf("⏳ Retrying in %v...", retryDelay)
+			log.Printf("⏳ [KITCHEN] Retrying in %v...", retryDelay)
 			time.Sleep(retryDelay)
 		}
 	}
 
 	if err != nil {
-		log.Fatalf("❌ Failed to connect to RabbitMQ after %d attempts: %v", maxRetries, err)
+		log.Fatalf("❌ [KITCHEN] Failed to connect to RabbitMQ after %d attempts: %v", maxRetries, err)
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		log.Fatalf("❌ Failed to open channel: %v", err)
+		log.Fatalf("❌ [KITCHEN] Failed to open channel: %v", err)
 	}
 
 	// Store channel globally for publishing
@@ -75,12 +74,12 @@ func ConsumeOrders() {
 		nil,             // arguments
 	)
 	if err != nil {
-		log.Fatalf("❌ Failed to declare kitchen_orders queue: %v", err)
+		log.Fatalf("❌ [KITCHEN] Failed to declare kitchen_orders queue: %v", err)
 	}
 
 	msgs, err := ch.Consume(
 		"kitchen_orders", // queue
-		"",              // consumer
+		"kitchen-service", // consumer tag
 		false,           // auto-ack (set to false for manual ack)
 		false,           // exclusive
 		false,           // no-local
@@ -88,32 +87,32 @@ func ConsumeOrders() {
 		nil,             // args
 	)
 	if err != nil {
-		log.Fatalf("❌ Failed to register consumer: %v", err)
+		log.Fatalf("❌ [KITCHEN] Failed to register consumer: %v", err)
 	}
 
-	log.Println("📡 Kitchen service waiting for orders from 'kitchen_orders' queue...")
+	log.Println("📡 [KITCHEN] Kitchen service waiting for orders from 'kitchen_orders' queue...")
 
 	go func() {
 		for msg := range msgs {
-			log.Printf("📦 Kitchen received: %s", msg.Body)
+			log.Printf("📦 [KITCHEN] Kitchen received: %s", msg.Body)
 
 			var orderMsg OrderMessage
 			if err := json.Unmarshal(msg.Body, &orderMsg); err != nil {
-				log.Printf("❌ Invalid message format: %v", err)
+				log.Printf("❌ [KITCHEN] Invalid message format: %v", err)
 				msg.Nack(false, false) // Reject and don't requeue
 				continue
 			}
 
 			// Process the order in kitchen
 			if err := processKitchenOrder(orderMsg); err != nil {
-				log.Printf("❌ Failed to process kitchen order: %v", err)
+				log.Printf("❌ [KITCHEN] Failed to process kitchen order: %v", err)
 				msg.Nack(false, true) // Reject and requeue for retry
 				continue
 			}
 
 			// Acknowledge the message
 			msg.Ack(false)
-			log.Printf("✅ Kitchen order %s processed successfully", orderMsg.ID)
+			log.Printf("✅ [KITCHEN] Kitchen order %s processed successfully", orderMsg.ID)
 		}
 	}()
 }
@@ -122,10 +121,12 @@ func ConsumeOrders() {
 func processKitchenOrder(orderMsg OrderMessage) error {
 	// Create order in kitchen service
 	kitchenOrder := service.CreateOrder(orderMsg.Product)
-	log.Printf("🍳 Kitchen order created: %+v", kitchenOrder)
+	log.Printf("🍳 [KITCHEN] Kitchen order created: %+v", kitchenOrder)
 
-	// Simulate some processing time
-	time.Sleep(2 * time.Second)
+	// Simulate some processing time (3-5 seconds pour être réaliste)
+	processingTime := 3 + time.Duration(time.Now().UnixNano()%3)*time.Second
+	log.Printf("🍳 [KITCHEN] Processing order %s for %v...", orderMsg.ID, processingTime)
+	time.Sleep(processingTime)
 
 	// Auto-confirm the order (kitchen accepts it)
 	confirmedOrder, err := service.UpdateOrderStatus(kitchenOrder.ID, "confirmed")
@@ -133,11 +134,11 @@ func processKitchenOrder(orderMsg OrderMessage) error {
 		return fmt.Errorf("failed to confirm kitchen order: %v", err)
 	}
 
-	log.Printf("✅ Kitchen confirmed order: %+v", confirmedOrder)
+	log.Printf("✅ [KITCHEN] Kitchen confirmed order: %+v", confirmedOrder)
 
 	// Notify the order service that kitchen confirmed the order
 	if err := notifyOrderServiceConfirmed(orderMsg.ID, "confirmed"); err != nil {
-		log.Printf("⚠️ Failed to notify order service: %v", err)
+		log.Printf("⚠️ [KITCHEN] Failed to notify order service: %v", err)
 		// Don't return error - kitchen processing was successful
 	}
 
@@ -164,11 +165,11 @@ func notifyOrderServiceConfirmed(orderID, status string) error {
 	}
 
 	confirmation := map[string]interface{}{
-		"order_id":   orderID,
-		"status":     status,
+		"order_id":     orderID,
+		"status":       status,
 		"confirmed_at": time.Now(),
-		"event_type": "kitchen_confirmed",
-		"service":    "kitchen",
+		"event_type":   "kitchen_confirmed",
+		"service":      "kitchen",
 	}
 
 	payload, err := json.Marshal(confirmation)
@@ -197,93 +198,6 @@ func notifyOrderServiceConfirmed(orderID, status string) error {
 		return fmt.Errorf("failed to publish confirmation: %v", err)
 	}
 
-	log.Printf("📤 Kitchen confirmation sent for order %s", orderID)
-	return nil
-}
-
-// Also add a consumer for kitchen confirmations in the order service
-func ConsumeKitchenConfirmations() {
-	rabbitmqURL := os.Getenv("RABBITMQ_URL")
-	if rabbitmqURL == "" {
-		rabbitmqURL = "amqp://guest:guest@localhost:5672/"
-	}
-
-	conn, err := amqp.Dial(rabbitmqURL)
-	if err != nil {
-		log.Printf("❌ Failed to connect to RabbitMQ for confirmations: %v", err)
-		return
-	}
-
-	ch, err := conn.Channel()
-	if err != nil {
-		log.Printf("❌ Failed to open channel for confirmations: %v", err)
-		return
-	}
-
-	// Declare kitchen_confirmations queue
-	_, err = ch.QueueDeclare(
-		"kitchen_confirmations", // name
-		true,                   // durable
-		false,                  // delete when unused
-		false,                  // exclusive
-		false,                  // no-wait
-		nil,                    // arguments
-	)
-	if err != nil {
-		log.Printf("❌ Failed to declare kitchen_confirmations queue: %v", err)
-		return
-	}
-
-	msgs, err := ch.Consume(
-		"kitchen_confirmations", // queue
-		"",                     // consumer
-		false,                  // auto-ack
-		false,                  // exclusive
-		false,                  // no-local
-		false,                  // no-wait
-		nil,                    // args
-	)
-	if err != nil {
-		log.Printf("❌ Failed to register confirmations consumer: %v", err)
-		return
-	}
-
-	log.Println("📡 Order service listening for kitchen confirmations...")
-
-	go func() {
-		for msg := range msgs {
-			log.Printf("📦 Order service received confirmation: %s", msg.Body)
-
-			var confirmation map[string]interface{}
-			if err := json.Unmarshal(msg.Body, &confirmation); err != nil {
-				log.Printf("❌ Invalid confirmation format: %v", err)
-				msg.Nack(false, false)
-				continue
-			}
-
-			orderID, ok := confirmation["order_id"].(string)
-			if !ok {
-				log.Printf("❌ Invalid order_id in confirmation")
-				msg.Nack(false, false)
-				continue
-			}
-
-			// Update order status via HTTP call to order service
-			if err := updateOrderStatusViaHTTP(orderID, "confirmed"); err != nil {
-				log.Printf("❌ Failed to update order status: %v", err)
-				msg.Nack(false, true) // Requeue for retry
-				continue
-			}
-
-			msg.Ack(false)
-			log.Printf("✅ Order %s confirmed by kitchen", orderID)
-		}
-	}()
-}
-
-// updateOrderStatusViaHTTP updates order status via HTTP call
-func updateOrderStatusViaHTTP(orderID, status string) error {
-	// This should be called from the order service, not kitchen
-	// You'll need to implement this in the order service
+	log.Printf("📤 [KITCHEN] Kitchen confirmation sent for order %s", orderID)
 	return nil
 }

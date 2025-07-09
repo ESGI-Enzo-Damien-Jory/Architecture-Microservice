@@ -17,22 +17,43 @@ class RabbitMQService {
 
   async connect() {
     try {
-      // Using amqp091-go compatible library
+      // Using amqplib with your Docker setup
       const amqp = await import('amqplib')
-      const rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672/'
+      const rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://admin:supersecret@rabbitmq:5672/'
       
-      this.connection = await amqp.connect(rabbitmqUrl)
-      this.channel = await this.connection.createChannel()
+      console.log('[DELIVERY] Attempting to connect to RabbitMQ:', rabbitmqUrl.replace(/\/\/.*@/, '//***@'))
       
-      console.log('✅ Delivery service connected to RabbitMQ')
+      // Retry logic
+      let connected = false
+      const maxRetries = 30
+      
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          this.connection = await amqp.connect(rabbitmqUrl)
+          this.channel = await this.connection.createChannel()
+          connected = true
+          break
+        } catch (err) {
+          console.log(`[DELIVERY] Connection attempt ${i + 1}/${maxRetries} failed:`, err.message)
+          if (i < maxRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, 5000))
+          }
+        }
+      }
+      
+      if (!connected) {
+        throw new Error('Failed to connect after retries')
+      }
+      
+      console.log('✅ [DELIVERY] Successfully connected to RabbitMQ')
       
       // Start consuming confirmed orders
       await this.consumeConfirmedOrders()
       
     } catch (error) {
-      console.error('❌ Failed to connect to RabbitMQ:', error)
-      // Retry connection after 5 seconds
-      setTimeout(() => this.connect(), 5000)
+      console.error('❌ [DELIVERY] Failed to connect to RabbitMQ:', error)
+      // Retry connection after 10 seconds
+      setTimeout(() => this.connect(), 10000)
     }
   }
 
@@ -46,7 +67,7 @@ class RabbitMQService {
       durable: true
     })
 
-    console.log('📡 Delivery service waiting for confirmed orders from delivery_orders queue...')
+    console.log('📡 [DELIVERY] Delivery service waiting for confirmed orders from delivery_orders queue...')
 
     // Consume messages
     await this.channel.consume('delivery_orders', async (msg: any) => {
@@ -54,17 +75,17 @@ class RabbitMQService {
 
       try {
         const orderData: OrderMessage = JSON.parse(msg.content.toString())
-        console.log('📦 Delivery received confirmed order:', orderData)
+        console.log('📦 [DELIVERY] Delivery received confirmed order:', orderData)
 
         // Process the confirmed order
         await this.processConfirmedOrder(orderData)
 
         // Acknowledge the message
         this.channel.ack(msg)
-        console.log(`✅ Delivery processed order ${orderData.id}`)
+        console.log(`✅ [DELIVERY] Delivery processed order ${orderData.id}`)
 
       } catch (error) {
-        console.error('❌ Failed to process delivery order:', error)
+        console.error('❌ [DELIVERY] Failed to process delivery order:', error)
         // Reject and requeue for retry
         this.channel.nack(msg, false, true)
       }
@@ -82,7 +103,7 @@ class RabbitMQService {
         .first()
 
       if (existingDelivery) {
-        console.log(`📋 Delivery already exists for order ${orderData.id}`)
+        console.log(`📋 [DELIVERY] Delivery already exists for order ${orderData.id}`)
         return
       }
 
@@ -99,13 +120,13 @@ class RabbitMQService {
         })
         .returning('*')
 
-      console.log(`🚚 Delivery created for order ${orderData.id}:`, delivery[0])
+      console.log(`🚚 [DELIVERY] Delivery created for order ${orderData.id}:`, delivery[0])
 
       // Optionally notify other services that delivery is available
       await this.publishDeliveryCreated(delivery[0])
 
     } catch (error) {
-      console.error(`❌ Failed to create delivery for order ${orderData.id}:`, error)
+      console.error(`❌ [DELIVERY] Failed to create delivery for order ${orderData.id}:`, error)
       throw error
     }
   }
@@ -142,10 +163,10 @@ class RabbitMQService {
         }
       )
 
-      console.log(`📤 Delivery created event published for order ${delivery.order_id}`)
+      console.log(`📤 [DELIVERY] Delivery created event published for order ${delivery.order_id}`)
 
     } catch (error) {
-      console.error('❌ Failed to publish delivery created event:', error)
+      console.error('❌ [DELIVERY] Failed to publish delivery created event:', error)
     }
   }
 
@@ -180,10 +201,10 @@ class RabbitMQService {
         }
       )
 
-      console.log(`📤 Delivery status update published: ${orderId} -> ${status}`)
+      console.log(`📤 [DELIVERY] Delivery status update published: ${orderId} -> ${status}`)
 
     } catch (error) {
-      console.error('❌ Failed to publish delivery status update:', error)
+      console.error('❌ [DELIVERY] Failed to publish delivery status update:', error)
     }
   }
 
@@ -191,9 +212,9 @@ class RabbitMQService {
     try {
       if (this.channel) await this.channel.close()
       if (this.connection) await this.connection.close()
-      console.log('🔌 RabbitMQ connection closed')
+      console.log('🔌 [DELIVERY] RabbitMQ connection closed')
     } catch (error) {
-      console.error('❌ Error closing RabbitMQ connection:', error)
+      console.error('❌ [DELIVERY] Error closing RabbitMQ connection:', error)
     }
   }
 }
