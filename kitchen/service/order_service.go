@@ -15,34 +15,34 @@ func CreateOrder(item string) model.Order {
 	order := model.Order{
 		ID:     id,
 		Item:   item,
-		Status: "received",
+		Status: "received", // Start with received status
 	}
 	orders[id] = order
-	log.Printf("[SERVICE] Order created: %+v", order)
+	log.Printf("[SERVICE] Kitchen order created: %+v", order)
 	return order
 }
 
 func GetOrder(id string) (model.Order, error) {
 	order, exists := orders[id]
 	if !exists {
-		log.Printf("[SERVICE] Order %s not found", id)
+		log.Printf("[SERVICE] Kitchen order %s not found", id)
 		return model.Order{}, errors.New("order not found")
 	}
-	log.Printf("[SERVICE] Order found: %+v", order)
+	log.Printf("[SERVICE] Kitchen order found: %+v", order)
 	return order, nil
 }
 
 func UpdateOrderStatus(id, status string) (model.Order, error) {
 	order, exists := orders[id]
 	if !exists {
-		log.Printf("[SERVICE] Order %s not found for status update", id)
+		log.Printf("[SERVICE] Kitchen order %s not found for status update", id)
 		return model.Order{}, errors.New("order not found")
 	}
 	
-	log.Printf("[SERVICE] Updating order %s from status %s to %s", id, order.Status, status)
+	log.Printf("[SERVICE] Updating kitchen order %s from status %s to %s", id, order.Status, status)
 	order.Status = status
 	orders[id] = order
-	log.Printf("[SERVICE] Order updated: %+v", order)
+	log.Printf("[SERVICE] Kitchen order updated: %+v", order)
 	
 	return order, nil
 }
@@ -52,6 +52,33 @@ func ListOrders() []model.Order {
 	for _, order := range orders {
 		orderList = append(orderList, order)
 	}
-	log.Printf("[SERVICE] Listed %d orders", len(orderList))
+	log.Printf("[SERVICE] Listed %d kitchen orders", len(orderList))
 	return orderList
+}
+
+// GetOrdersByStatus - Get orders by specific status
+func GetOrdersByStatus(status string) []model.Order {
+	orderList := []model.Order{}
+	for _, order := range orders {
+		if order.Status == status {
+			orderList = append(orderList, order)
+		}
+	}
+	log.Printf("[SERVICE] Found %d kitchen orders with status %s", len(orderList), status)
+	return orderList
+}
+
+// GetPendingOrders - Get orders that need cook action
+func GetPendingOrders() []model.Order {
+	return GetOrdersByStatus("received")
+}
+
+// GetPreparingOrders - Get orders currently being prepared
+func GetPreparingOrders() []model.Order {
+	return GetOrdersByStatus("preparing")
+}
+
+// GetReadyOrders - Get orders that are ready
+func GetReadyOrders() []model.Order {
+	return GetOrdersByStatus("ready")
 }

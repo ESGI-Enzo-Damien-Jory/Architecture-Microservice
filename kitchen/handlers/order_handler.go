@@ -1,3 +1,4 @@
+// kitchen/handlers/order_handler.go - Updated for RabbitMQ flow
 package handler
 
 import (
@@ -7,48 +8,29 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type CreateOrderRequest struct {
-	Item string `json:"item"`
-}
-
 type UpdateStatusRequest struct {
 	Status string `json:"status"`
 }
 
-func CreateOrder(c *fiber.Ctx) error {
-	var body CreateOrderRequest
-	if err := c.BodyParser(&body); err != nil {
-		log.Printf("[KITCHEN] Invalid request body: %v", err)
-		return c.Status(400).JSON(fiber.Map{"error": "invalid request"})
-	}
-	
-	if body.Item == "" {
-		return c.Status(400).JSON(fiber.Map{"error": "Item is required"})
-	}
-	
-	log.Printf("[KITCHEN] Creating order with item: %s", body.Item)
-	order := service.CreateOrder(body.Item)
-	log.Printf("[KITCHEN] Order created: %+v", order)
-	
-	return c.Status(201).JSON(order)
-}
-
+// GetOrder - Get a specific kitchen order by ID
 func GetOrder(c *fiber.Ctx) error {
 	id := c.Params("id")
-	log.Printf("[KITCHEN] Getting order with ID: %s", id)
+	log.Printf("[KITCHEN] Getting kitchen order with ID: %s", id)
 	
 	order, err := service.GetOrder(id)
 	if err != nil {
-		log.Printf("[KITCHEN] Order %s not found: %v", id, err)
+		log.Printf("[KITCHEN] Kitchen order %s not found: %v", id, err)
 		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
 	}
 	
 	return c.JSON(order)
 }
 
+// UpdateOrderStatus - Cook confirms/updates kitchen order status
+// This is the key endpoint for cooks to confirm orders
 func UpdateOrderStatus(c *fiber.Ctx) error {
 	id := c.Params("id")
-	log.Printf("[KITCHEN] Updating status for order ID: %s", id)
+	log.Printf("[KITCHEN] Cook updating status for kitchen order ID: %s", id)
 	
 	var body UpdateStatusRequest
 	if err := c.BodyParser(&body); err != nil {
@@ -56,8 +38,8 @@ func UpdateOrderStatus(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid request"})
 	}
 	
-	// Validate status
-	validStatuses := []string{"received", "preparing", "ready", "completed"}
+	// Validate status - only allow kitchen-specific statuses
+	validStatuses := []string{"received", "confirmed", "preparing", "ready", "completed"}
 	isValid := false
 	for _, status := range validStatuses {
 		if body.Status == status {
@@ -69,28 +51,105 @@ func UpdateOrderStatus(c *fiber.Ctx) error {
 	if !isValid {
 		log.Printf("[KITCHEN] Invalid status: %s", body.Status)
 		return c.Status(400).JSON(fiber.Map{
-			"error": "Invalid status. Valid statuses: received, preparing, ready, completed",
+			"error": "Invalid status. Valid statuses: received, confirmed, preparing, ready, completed",
 		})
 	}
 	
-	log.Printf("[KITCHEN] Updating order %s to status: %s", id, body.Status)
+	log.Printf("[KITCHEN] Cook updating kitchen order %s to status: %s", id, body.Status)
 	
 	order, err := service.UpdateOrderStatus(id, body.Status)
 	if err != nil {
-		log.Printf("[KITCHEN] Failed to update order %s: %v", id, err)
+		log.Printf("[KITCHEN] Failed to update kitchen order %s: %v", id, err)
 		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
 	}
 	
-	log.Printf("[KITCHEN] Order %s updated successfully to status: %s", id, body.Status)
+	log.Printf("[KITCHEN] Kitchen order %s updated successfully to status: %s", id, body.Status)
 	return c.JSON(order)
 }
 
+// ListOrders - Get all kitchen orders (for cooks to see what to prepare)
 func ListOrders(c *fiber.Ctx) error {
-	log.Printf("[KITCHEN] Listing all orders")
+	log.Printf("[KITCHEN] Cook listing all kitchen orders")
 	orders := service.ListOrders()
-	log.Printf("[KITCHEN] Found %d orders", len(orders))
+	log.Printf("[KITCHEN] Found %d kitchen orders", len(orders))
 	return c.JSON(fiber.Map{
 		"orders": orders,
 		"count":  len(orders),
+	})
+}
+
+// GetPendingOrders - Get orders that need cook action
+func GetPendingOrders(c *fiber.Ctx) error {
+	log.Printf("[KITCHEN] Cook getting pending kitchen orders")
+	orders := service.GetOrdersByStatus("received")
+	log.Printf("[KITCHEN] Found %d pending kitchen orders", len(orders))
+	return c.JSON(fiber.Map{
+		"orders": orders,
+		"count":  len(orders),
+	})
+}
+
+// GetPreparingOrders - Get orders currently being prepared
+func GetPreparingOrders(c *fiber.Ctx) error {
+	log.Printf("[KITCHEN] Cook getting orders in preparation")
+	orders := service.GetOrdersByStatus("preparing")
+	log.Printf("[KITCHEN] Found %d orders in preparation", len(orders))
+	return c.JSON(fiber.Map{
+		"orders": orders,
+		"count":  len(orders),
+	})
+}
+
+// ConfirmOrder - Shortcut endpoint for cooks to confirm orders
+func ConfirmOrder(c *fiber.Ctx) error {
+	id := c.Params("id")
+	log.Printf("[KITCHEN] Cook confirming kitchen order: %s", id)
+	
+	order, err := service.UpdateOrderStatus(id, "confirmed")
+	if err != nil {
+		log.Printf("[KITCHEN] Failed to confirm kitchen order %s: %v", id, err)
+		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
+	}
+	
+	log.Printf("[KITCHEN] Kitchen order %s confirmed successfully", id)
+	return c.JSON(fiber.Map{
+		"message": "Order confirmed successfully",
+		"order":   order,
+	})
+}
+
+// StartPreparation - Cook starts preparing confirmed order
+func StartPreparation(c *fiber.Ctx) error {
+	id := c.Params("id")
+	log.Printf("[KITCHEN] Cook starting preparation for kitchen order: %s", id)
+	
+	order, err := service.UpdateOrderStatus(id, "preparing")
+	if err != nil {
+		log.Printf("[KITCHEN] Failed to start preparation for kitchen order %s: %v", id, err)
+		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
+	}
+	
+	log.Printf("[KITCHEN] Kitchen order %s preparation started", id)
+	return c.JSON(fiber.Map{
+		"message": "Order preparation started",
+		"order":   order,
+	})
+}
+
+// MarkOrderReady - Cook marks order as ready
+func MarkOrderReady(c *fiber.Ctx) error {
+	id := c.Params("id")
+	log.Printf("[KITCHEN] Cook marking kitchen order as ready: %s", id)
+	
+	order, err := service.UpdateOrderStatus(id, "ready")
+	if err != nil {
+		log.Printf("[KITCHEN] Failed to mark kitchen order %s as ready: %v", id, err)
+		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
+	}
+	
+	log.Printf("[KITCHEN] Kitchen order %s marked as ready", id)
+	return c.JSON(fiber.Map{
+		"message": "Order marked as ready",
+		"order":   order,
 	})
 }

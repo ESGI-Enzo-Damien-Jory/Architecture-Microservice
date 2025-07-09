@@ -12,13 +12,7 @@ import (
 var startTime = time.Now()
 
 func SetupRoutes(app *fiber.App) {
-	api := app.Group("/api")
-
-	api.Post("/orders", handler.CreateOrder)
-	api.Get("/orders/:id", handler.GetOrder)
-	api.Patch("/orders/:id/status", handler.UpdateOrderStatus)
-	api.Get("/orders", handler.ListOrders)
-
+	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
 		healthData := fiber.Map{
 			"status":    "healthy",
@@ -41,6 +35,32 @@ func SetupRoutes(app *fiber.App) {
 
 		return c.JSON(healthData)
 	})
+
+	// API routes for kitchen operations
+	api := app.Group("/api")
+
+	// Kitchen order management (for cooks)
+	orders := api.Group("/orders")
+	
+	// Get all kitchen orders
+	orders.Get("/", handler.ListOrders)
+	
+	// Get pending orders (need cook action)
+	orders.Get("/pending", handler.GetPendingOrders)
+	
+	// Get orders in preparation
+	orders.Get("/preparing", handler.GetPreparingOrders)
+	
+	// Get specific order
+	orders.Get("/:id", handler.GetOrder)
+	
+	// Update order status (general)
+	orders.Patch("/:id/status", handler.UpdateOrderStatus)
+	
+	// Specific cook actions
+	orders.Post("/:id/confirm", handler.ConfirmOrder)
+	orders.Post("/:id/start-preparation", handler.StartPreparation)
+	orders.Post("/:id/mark-ready", handler.MarkOrderReady)
 }
 
 func testRabbitMQ() bool {
