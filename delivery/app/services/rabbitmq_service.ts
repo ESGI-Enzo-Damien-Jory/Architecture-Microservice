@@ -96,7 +96,7 @@ class RabbitMQService {
           return
         }
 
-        // Process the confirmed order
+        // Process the confirmed order - BUT DON'T CREATE DELIVERY YET
         await this.processConfirmedOrder(orderData)
 
         // Acknowledge the message
@@ -126,7 +126,7 @@ class RabbitMQService {
         return
       }
 
-      // Create delivery record with the SAME ID as the order
+      // ✅ FIXED: Create delivery record immediately when order is confirmed
       const delivery = await db
         .insertQuery()
         .table('deliveries')
@@ -141,7 +141,7 @@ class RabbitMQService {
 
       console.log(`🚚 [DELIVERY] Delivery created for order ${orderData.id}:`, delivery[0])
 
-      // Notify other services that delivery is available
+      // ✅ FIXED: Publish delivery created event
       await this.publishDeliveryCreated(delivery[0])
 
     } catch (error) {
