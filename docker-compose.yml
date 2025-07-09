@@ -116,26 +116,26 @@ services:
       - "5002:5000"
     restart: unless-stopped
 
-  command:
-    build:
-      context: ./command
-      dockerfile: Dockerfile
-    environment:
-      DATABASE_URL: postgresql://command_user:command_pass@postgres_command:5432/command?sslmode=disable
-      RABBITMQ_URL: amqp://admin:supersecret@rabbitmq:5672/
-      AUTH_SERVICE_URL: http://auth:3001
-    volumes:
-      - ./secrets:/secrets:ro
-    depends_on:
-      postgres_command:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      auth:
-        condition: service_healthy
-    ports:
-      - "5002:5000"
-    restart: unless-stopped
+    command:
+      build:
+        context: ./command
+        dockerfile: Dockerfile
+      environment:
+        DATABASE_URL: postgresql://command_user:command_pass@postgres_command:5432/command?sslmode=disable
+        RABBITMQ_URL: amqp://admin:supersecret@rabbitmq:5672/
+        AUTH_SERVICE_URL: http://auth:3001
+      volumes:
+        - ./secrets:/secrets:ro
+      depends_on:
+        postgres_command:
+          condition: service_healthy
+        rabbitmq:
+          condition: service_healthy
+        auth:
+          condition: service_healthy
+      ports:
+        - "5002:5000"
+      restart: unless-stopped
 
   delivery:
     build:
