@@ -11,7 +11,7 @@
 			"name": "Auth",
 			"item": [
 				{
-					"name": "Auth HealthCheck",
+					"name": "Get Health",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -29,10 +29,15 @@
 					"response": []
 				},
 				{
-					"name": "Auth Register",
+					"name": "Register Client",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"body": {
 							"mode": "raw",
 							"raw": "{\r\n    \"email\": \"dnithard@myges.fr\",\r\n    \"password\": \"pass123\",\r\n    \"role\": \"client\"\r\n}",
@@ -56,10 +61,96 @@
 					"response": []
 				},
 				{
-					"name": "Auth Login",
+					"name": "Register Cook",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"cook@example.com\",\r\n    \"password\": \"pass123\",\r\n    \"role\": \"cook\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/register",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Delivery",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"deliveryman@gmail.com\",\r\n    \"password\": \"pass123\",\r\n    \"role\": \"delivery\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/register",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.globals.set('client_access_token', response.accessToken);",
+									"    pm.globals.set('client_refresh_token', response.refreshToken);",
+									"    pm.globals.set('client_user_id', response.user.id);",
+									"    console.log('Client tokens stored successfully');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"body": {
 							"mode": "raw",
 							"raw": "{\r\n    \"email\": \"dnithard@myges.fr\",\r\n    \"password\": \"pass123\"\r\n}",
@@ -83,13 +174,116 @@
 					"response": []
 				},
 				{
-					"name": "Auth Refresh Token",
+					"name": "Login Cook",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.globals.set('cook_access_token', response.accessToken);",
+									"    pm.globals.set('cook_refresh_token', response.refreshToken);",
+									"    pm.globals.set('cook_user_id', response.user.id);",
+									"    console.log('Cook tokens stored successfully');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"refreshToken\": \"4f67fc5ff1dcea615f236702a21b6d42ee3761bdd7397e5ee5674304a89d6471\"\r\n}",
+							"raw": "{\r\n    \"email\": \"cook@example.com\",\r\n    \"password\": \"pass123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/login",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Delivery",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.globals.set('delivery_access_token', response.accessToken);",
+									"    pm.globals.set('delivery_refresh_token', response.refreshToken);",
+									"    pm.globals.set('delivery_user_id', response.user.id);",
+									"    console.log('Delivery tokens stored successfully');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"deliveryman@gmail.com\",\r\n    \"password\": \"pass123\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3001/login",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"refreshToken\": \"{{client_refresh_token}}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -117,7 +311,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImExNDNlNjU2LWJkOGMtNDNhYy1hNjQyLWY0Y2Y3NmVlZTQ0YiIsInJvbGUiOiJjbGllbnQiLCJpYXQiOjE3NTE4Nzc2MDAsImV4cCI6MTc1MTg4MTIwMCwiYXVkIjoibWljcm9zZXJ2aWNlcyIsImlzcyI6ImF1dGgtc2VydmljZSJ9.Li6_DnB2WkseOyFlWGliQE4LQmWyzsmeJ5Frr20EGakdGXZBmvAwrqD5n6PN4oN-d03_gvmSj6CyHdK1xeBi_X6Qd46GSCqgne2-gr5YKBXofB3Ole2NsSIleI410B8GctBzc3CCoNWdYfmFpTwP-IQEfZS0qe8YmxNPJzjr75o8tgiyIbXC2znNXk05f5u8NTZ3d-aZ8jItAbXQfhR3fhlTJAImt_oU_kbgNwVNudQiZKdGr67_7-bXg-5onEid9_egwIh5nSiVdgZaG-JX3-iZqs-aN92BUyiBND0Tr7H2LrZrpQFio8IYv5CvH0xG8cn2BNK_W-CMFW2wyGb6cw",
+									"value": "{{client_access_token}}",
 									"type": "string"
 								}
 							]
@@ -145,7 +339,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImExNDNlNjU2LWJkOGMtNDNhYy1hNjQyLWY0Y2Y3NmVlZTQ0YiIsInJvbGUiOiJjbGllbnQiLCJpYXQiOjE3NTE4NzM0NDMsImV4cCI6MTc1MTg3NzA0MywiYXVkIjoibWljcm9zZXJ2aWNlcyIsImlzcyI6ImF1dGgtc2VydmljZSJ9.WxklIdYGVdLc1aI3BQQh1uhY9jX5bgF3vzatsma0cz-sOeo8QM_F4ugNNWZfHd-uLlbwM2STBng8zm7ZcppbikCh7wHut1vAtgAqoPknQcMq3JMNirRNZCDBtUG1_3yy9VjxW0FEEKX9E4P5T9YCgXUFNJjOjPOfLp-KcPYJb_6vovG7rIgjngyZLIngbTSl0hnN4H1CS5dbNkakJoVMpPe1OcjLC4NbpD6GF0o_YrnL3wB4phm1v5XBkIqrDJwDLdMIgwjGhqi_HzLiWv5xmjS_GEcgkYmEbcu0-g34lrWaaYcwPIJG-8bAAXpXdyqHRKPh32acH66pEjkpWTciSQ",
+									"value": "{{client_access_token}}",
 									"type": "string"
 								}
 							]
@@ -168,22 +362,21 @@
 			]
 		},
 		{
-			"name": "Kitchen",
+			"name": "Orders",
 			"item": [
 				{
-					"name": "Kitchen HealthCheck",
+					"name": "Get Health",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5003/kitchen/health",
+							"raw": "http://localhost:5002/health",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5003",
+							"port": "5002",
 							"path": [
-								"kitchen",
 								"health"
 							]
 						}
@@ -191,19 +384,59 @@
 					"response": []
 				},
 				{
-					"name": "Get All Kitchen Orders",
+					"name": "Service Info",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5003/kitchen/orders",
+							"raw": "http://localhost:5002",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
-							"port": "5003",
+							"port": "5002"
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Order - Client",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{client_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"product\": \"Pizza Margherita\",\n  \"quantity\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
 							"path": [
-								"kitchen",
+								"api",
 								"orders"
 							]
 						}
@@ -211,19 +444,412 @@
 					"response": []
 				},
 				{
-					"name": "Get Kitchen Order by ID",
+					"name": "Create Order - Burger",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{client_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"product\": \"Burger Classic\",\n  \"quantity\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Orders - Client",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{client_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5002/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Orders - Cook",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{cook_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5002/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Ready Orders - Delivery",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{delivery_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5002/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{client_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5002/api/orders/ord-001",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"orders",
+								"ord-001"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order Status - Confirmed",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{cook_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"confirmed\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/orders/ord-001/status",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"orders",
+								"ord-001",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order Status - Preparing",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{cook_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"preparing\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/orders/ord-001/status",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"orders",
+								"ord-001",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order Status - Ready",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{cook_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"ready\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/orders/ord-001/status",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"orders",
+								"ord-001",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order Status - Delivered",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{delivery_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"delivered\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/orders/ord-001/status",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"orders",
+								"ord-001",
+								"status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Kitchen",
+			"item": [
+				{
+					"name": "Get Health",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:5003/kitchen/orders/1",
+							"raw": "http://localhost:5003/health",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "5003",
 							"path": [
-								"kitchen",
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Orders",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5003/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5003/api/orders/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5003",
+							"path": [
+								"api",
 								"orders",
 								"1"
 							]
@@ -232,7 +858,7 @@
 					"response": []
 				},
 				{
-					"name": "Update Kitchen Order Status",
+					"name": "Update Order Status",
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -251,17 +877,137 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:5003/kitchen/orders/1/status",
+							"raw": "http://localhost:5003/api/orders/1/status",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "5003",
 							"path": [
-								"kitchen",
+								"api",
 								"orders",
 								"1",
 								"status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Delivery",
+			"item": [
+				{
+					"name": "Get Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3333/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Deliveries",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{delivery_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3333/deliveries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"deliveries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Delivery",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"order_id\": \"order-12345\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3333/deliveries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"deliveries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Delivery",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"status\": \"reserved\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3333/deliveries/3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3333",
+							"path": [
+								"deliveries",
+								"3"
 							]
 						}
 					},
