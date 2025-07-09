@@ -13,12 +13,12 @@ func main() {
     app := fiber.New()
 
     app.Use(cors.New(cors.Config{
-        AllowOrigins:  "http://localhost:3002",
-        AllowMethods:  "GET",
-        AllowHeaders:  "Origin, Content-Type, Accept, Authorization",
+        AllowOrigins:     "http://localhost:3000,http://localhost:3002,http://localhost:5003",
+        AllowMethods:     "GET,PATCH",
+        AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
         AllowCredentials: true,
-        MaxAge:        3600,
-    })) // :contentReference[oaicite:0]{index=0}
+        MaxAge:           3600,
+    }))
 
     queue.ConsumeOrders()
     config.SetupRoutes(app)
