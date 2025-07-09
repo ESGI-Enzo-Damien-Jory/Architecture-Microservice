@@ -41,3 +41,6 @@ router.use([() => import('@adonisjs/core/bodyparser_middleware')])
 export const middleware = router.named({
   verifyToken: () => import('#middleware/verify_token_middleware')
 })
+
+// Initialize RabbitMQ service
+import '#services/rabbitmq_service'
