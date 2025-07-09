@@ -38,29 +38,29 @@ services:
       retries: 3
       start_period: 10s
 
-  web:
-    image: node:18-alpine
-    working_dir: /app
-    command: sh -c "npm install && npm run dev"
-    ports:
-      - "3000:3000"
-    environment:
-      # Client-side URLs (build time)
-      NEXT_PUBLIC_AUTH_URL: http://localhost:3001
+  # web:
+  #   image: node:18-alpine
+  #   working_dir: /app
+  #   command: sh -c "npm install && npm run dev"
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     # Client-side URLs (build time)
+  #     NEXT_PUBLIC_AUTH_URL: http://localhost:3001
       
-      # Server-side URLs (runtime) - Docker service names
-      AUTH_SERVICE_URL: http://auth:3001
-      KITCHEN_SERVICE_URL: http://kitchen:5000
-      DELIVERY_SERVICE_URL: http://delivery:3333
-      RABBIT_MQ_URL: http://rabbitmq:15672
+  #     # Server-side URLs (runtime) - Docker service names
+  #     AUTH_SERVICE_URL: http://auth:3001
+  #     KITCHEN_SERVICE_URL: http://kitchen:5000
+  #     DELIVERY_SERVICE_URL: http://delivery:3333
+  #     RABBIT_MQ_URL: http://rabbitmq:15672
       
-      NODE_ENV: development
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - auth
-    restart: unless-stopped
+  #     NODE_ENV: development
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   depends_on:
+  #     - auth
+  #   restart: unless-stopped
 
   menu-cms:
     build:
@@ -97,6 +97,7 @@ services:
         condition: service_healthy
     ports:
       - "5003:5000"
+
   order:
     build:
       context: ./order
@@ -166,6 +167,7 @@ services:
       retries: 3
       start_period: 30s
     restart: unless-stopped
+  
   postgres_kitchen:
     image: postgres:16
     container_name: postgres_kitchen

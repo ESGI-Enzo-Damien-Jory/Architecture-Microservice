@@ -1,156 +1,100 @@
+// service/order_service.go
 package service
 
 import (
+	"encoding/json"
 	"order/config"
 	"order/model"
 	"order/repository"
-	"encoding/json"
-	"fmt"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/rabbitmq/amqp091-go"
 )
 
-func CreateOrder(userID, product string, quantity int) (string, error) {
-	orderID := uuid.New().String()
+// CreateItem describes one line in the new order.
+type CreateItem struct {
+	ItemType string // "product" | "menu"
+	ItemID   string
+	Quantity int
+	Price    int // cents
+}
 
-	order := model.Order{
-		ID:        orderID,
-		UserID:    userID,
-		Product:   product,
-		Quantity:  quantity,
-		Status:    "pending",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+// CreateOrder persists a new order + items then publishes an event.
+func CreateOrder(userID string, items []CreateItem, notes *string) (string, error) {
+	orderID := uuid.NewString()
+	now := time.Now()
+
+	var lines []model.OrderItem
+	total := 0
+	for _, it := range items {
+		total += it.Price * it.Quantity
+		lines = append(lines, model.OrderItem{
+			ID:             uuid.NewString(),
+			OrderID:        orderID,
+			ItemType:       it.ItemType,
+			ItemID:         it.ItemID,
+			Quantity:       it.Quantity,
+			UnitPriceCents: it.Price,
+			CreatedAt:      now,
+		})
 	}
 
-	// Save to database
-	if err := repository.InsertOrder(order); err != nil {
-		log.Printf("[SERVICE] Failed to save order to database: %v", err)
+	order := model.Order{
+		ID:              orderID,
+		UserID:          userID,
+		Status:          model.StatusPending,
+		Notes:           notes,
+		TotalPriceCents: total,
+		CreatedAt:       now,
+		Items:           lines,
+	}
+
+	if err := repository.InsertOrderWithItems(order); err != nil {
 		return "", err
 	}
 
-	// Publish to RabbitMQ
-	if err := publishOrderEvent(order); err != nil {
-		log.Printf("[SERVICE] Failed to publish order event: %v", err)
-		// Don't return error here - order is saved, just event publishing failed
-	}
-
-	log.Printf("[SERVICE] Order %s created successfully for user %s", orderID, userID)
+	_ = publishEvent(order, "order_created")
 	return orderID, nil
 }
 
-func publishOrderEvent(order model.Order) error {
-	if config.RabbitMQChannel == nil {
-		return fmt.Errorf("RabbitMQ channel not initialized")
-	}
-
-	// Create order event payload
-	orderEvent := map[string]interface{}{
-		"id":         order.ID,
-		"user_id":    order.UserID,
-		"product":    order.Product,
-		"quantity":   order.Quantity,
-		"status":     order.Status,
-		"created_at": order.CreatedAt,
-		"event_type": "order_created",
-	}
-
-	payload, err := json.Marshal(orderEvent)
-	if err != nil {
-		return fmt.Errorf("failed to marshal order event: %v", err)
-	}
-
-	err = config.RabbitMQChannel.Publish(
-		"",       // exchange
-		"orders", // routing key
-		false,    // mandatory
-		false,    // immediate
-		amqp091.Publishing{
-			ContentType: "application/json",
-			Body:        payload,
-			Timestamp:   time.Now(),
-			Headers: amqp091.Table{
-				"event_type": "order_created",
-				"service":    "order",
-			},
-		},
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to publish message to RabbitMQ: %v", err)
-	}
-
-	log.Printf("[SERVICE] Order event published to RabbitMQ for order %s", order.ID)
-	return nil
-}
-
-// UpdateOrderStatus updates an order status and publishes an event
-func UpdateOrderStatus(orderID, status string) error {
-	// Update in database
-	if err := repository.UpdateOrderStatus(orderID, status); err != nil {
+// UpdateOrderStatus updates status and publishes an event.
+func UpdateOrderStatus(id string, status model.OrderStatus) error {
+	if err := repository.UpdateOrderStatus(id, status); err != nil {
 		return err
 	}
-
-	// Get updated order for event
-	updatedOrder, err := repository.GetOrderById(orderID)
-	if err != nil {
-		log.Printf("[SERVICE] Failed to get updated order for event: %v", err)
-		return nil // Don't fail the status update if we can't publish event
+	o, err := repository.GetOrderById(id)
+	if err == nil {
+		_ = publishEvent(o, "order_status_updated")
 	}
-
-	// Publish status update event
-	if err := publishStatusUpdateEvent(updatedOrder); err != nil {
-		log.Printf("[SERVICE] Failed to publish status update event: %v", err)
-		// Don't return error - status was updated successfully
-	}
-
 	return nil
 }
 
-func publishStatusUpdateEvent(order model.Order) error {
+func publishEvent(o model.Order, evt string) error {
 	if config.RabbitMQChannel == nil {
-		return fmt.Errorf("RabbitMQ channel not initialized")
+		return nil
 	}
-
-	statusEvent := map[string]interface{}{
-		"id":         order.ID,
-		"user_id":    order.UserID,
-		"product":    order.Product,
-		"quantity":   order.Quantity,
-		"status":     order.Status,
-		"updated_at": order.UpdatedAt,
-		"event_type": "order_status_updated",
+	payload := map[string]interface{}{
+		"id":                  o.ID,
+		"user_id":             o.UserID,
+		"status":              o.Status,
+		"total_price_cents":   o.TotalPriceCents,
+		"created_at":          o.CreatedAt,
+		"updated_at":          o.UpdatedAt,
+		"items":               o.Items,
+		"event_type":          evt,
 	}
-
-	payload, err := json.Marshal(statusEvent)
-	if err != nil {
-		return fmt.Errorf("failed to marshal status event: %v", err)
-	}
-
-	err = config.RabbitMQChannel.Publish(
-		"",               // exchange
-		"order_updates",  // routing key
-		false,            // mandatory
-		false,            // immediate
+	body, _ := json.Marshal(payload)
+	return config.RabbitMQChannel.Publish(
+		"", "orders", false, false,
 		amqp091.Publishing{
 			ContentType: "application/json",
-			Body:        payload,
+			Body:        body,
 			Timestamp:   time.Now(),
 			Headers: amqp091.Table{
-				"event_type": "order_status_updated",
+				"event_type": evt,
 				"service":    "order",
-				"status":     order.Status,
 			},
 		},
 	)
-
-	if err != nil {
-		return fmt.Errorf("failed to publish status update to RabbitMQ: %v", err)
-	}
-
-	log.Printf("[SERVICE] Status update event published for order %s (status: %s)", order.ID, order.Status)
-	return nil
 }
