@@ -2,6 +2,7 @@ import { HttpContext } from '@adonisjs/core/http'
 import db from '@adonisjs/lucid/services/db'
 import env from '#start/env'
 import axios from 'axios'
+import { rabbitmqService } from '#services/rabbitmq_service'
 
 export default class DeliveriesController {
   async index({ request, response, logger }: HttpContext) {
@@ -95,6 +96,9 @@ export default class DeliveriesController {
           status: 'available',
         })
         .returning('*')
+
+      // Publish delivery created event
+      await rabbitmqService.publishDeliveryCreated(delivery)
 
       return response.created(delivery)
     } catch (err: any) {
@@ -197,6 +201,15 @@ export default class DeliveriesController {
       if (!updated) {
         return response.notFound({ error: 'Delivery not found or not accessible' })
       }
+
+      // Publish delivery status update event
+      await rabbitmqService.publishDeliveryStatusUpdate(
+        updated.id,
+        updated.order_id,
+        status
+      )
+
+      logger.info(`[DELIVERIES] Delivery ${updated.id} status updated to ${status} by user ${user.id}`)
 
       return response.ok(updated)
 
