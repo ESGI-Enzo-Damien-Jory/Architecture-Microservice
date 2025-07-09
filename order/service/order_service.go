@@ -1,19 +1,18 @@
+// service/order_service.go
 package service
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
-	"time"
-
 	"order/config"
 	"order/model"
 	"order/repository"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rabbitmq/amqp091-go"
 )
 
+// CreateItem describes one line in the new order.
 type CreateItem struct {
 	ItemType string // "product" | "menu"
 	ItemID   string
@@ -21,19 +20,7 @@ type CreateItem struct {
 	Price    int // cents
 }
 
-type OrderEvent struct {
-	ID              string             `json:"id"`
-	UserID          string             `json:"user_id"`
-	Status          string             `json:"status"`
-	Notes           *string            `json:"notes,omitempty"`
-	TotalPriceCents int                `json:"total_price_cents"`
-	CreatedAt       time.Time          `json:"created_at"`
-	UpdatedAt       time.Time          `json:"updated_at"`
-	Items           []model.OrderItem  `json:"items"`
-	EventType       string             `json:"event_type"`
-}
-
-// CreateOrder persists a new order + items and publishes an event
+// CreateOrder persists a new order + items then publishes an event.
 func CreateOrder(userID string, items []CreateItem, notes *string) (string, error) {
 	orderID := uuid.NewString()
 	now := time.Now()
@@ -67,92 +54,46 @@ func CreateOrder(userID string, items []CreateItem, notes *string) (string, erro
 		return "", err
 	}
 
-	if err := publishOrderToKitchen(order); err != nil {
-		log.Printf("[SERVICE] Failed to publish order to kitchen: %v", err)
-	}
-
+	_ = publishEvent(order, "order_created")
 	return orderID, nil
 }
 
-// UpdateOrderStatus updates an order status and publishes appropriate events
-func UpdateOrderStatus(orderID string, status string) error {
-	if err := repository.UpdateOrderStatus(orderID, status); err != nil {
+// UpdateOrderStatus updates status and publishes an event.
+func UpdateOrderStatus(id string, status model.OrderStatus) error {
+	if err := repository.UpdateOrderStatus(id, status); err != nil {
 		return err
 	}
-
-	order, err := repository.GetOrderById(orderID)
-	if err != nil {
-		log.Printf("[SERVICE] Failed to fetch order after update: %v", err)
-		return nil
+	o, err := repository.GetOrderById(id)
+	if err == nil {
+		_ = publishEvent(o, "order_status_updated")
 	}
-
-	if status == "confirmed" {
-		if err := publishOrderToDelivery(order); err != nil {
-			log.Printf("[SERVICE] Failed to publish to delivery: %v", err)
-		}
-	}
-
-	if err := publishStatusUpdateEvent(order); err != nil {
-		log.Printf("[SERVICE] Failed to publish status update: %v", err)
-	}
-
 	return nil
 }
 
-// publishOrderToKitchen sends the order to the kitchen queue
-func publishOrderToKitchen(order model.Order) error {
-	return publishOrderEvent(order, "kitchen_orders", "order_created")
-}
-
-// publishOrderToDelivery sends the order to the delivery queue
-func publishOrderToDelivery(order model.Order) error {
-	return publishOrderEvent(order, "delivery_orders", "order_confirmed")
-}
-
-// publishStatusUpdateEvent sends a generic status update
-func publishStatusUpdateEvent(order model.Order) error {
-	return publishOrderEvent(order, "order_updates", "order_status_updated")
-}
-
-func publishOrderEvent(order model.Order, queueName, eventType string) error {
+func publishEvent(o model.Order, evt string) error {
 	if config.RabbitMQChannel == nil {
-		return fmt.Errorf("RabbitMQ channel not initialized")
+		return nil
 	}
-
-	_, err := config.RabbitMQChannel.QueueDeclare(
-		queueName, true, false, false, false, nil,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare queue %s: %v", queueName, err)
+	payload := map[string]interface{}{
+		"id":                  o.ID,
+		"user_id":             o.UserID,
+		"status":              o.Status,
+		"total_price_cents":   o.TotalPriceCents,
+		"created_at":          o.CreatedAt,
+		"updated_at":          o.UpdatedAt,
+		"items":               o.Items,
+		"event_type":          evt,
 	}
-
-	event := OrderEvent{
-		ID:              order.ID,
-		UserID:          order.UserID,
-		Status:          order.Status,
-		Notes:           order.Notes,
-		TotalPriceCents: order.TotalPriceCents,
-		CreatedAt:       order.CreatedAt,
-		UpdatedAt:       order.UpdatedAt,
-		Items:           order.Items,
-		EventType:       eventType,
-	}
-
-	payload, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("failed to marshal %s event: %v", eventType, err)
-	}
-
+	body, _ := json.Marshal(payload)
 	return config.RabbitMQChannel.Publish(
-		"", queueName, false, false,
+		"", "orders", false, false,
 		amqp091.Publishing{
 			ContentType: "application/json",
-			Body:        payload,
+			Body:        body,
 			Timestamp:   time.Now(),
 			Headers: amqp091.Table{
-				"event_type": eventType,
+				"event_type": evt,
 				"service":    "order",
-				"order_id":   order.ID,
 			},
 		},
 	)
