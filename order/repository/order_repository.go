@@ -7,9 +7,9 @@ import (
 	"log"
 )
 
-func InsertOrder(cmd model.Order) error {
+func InsertOrder(order model.Order) error {
 	query := `INSERT INTO orders (id, user_id, product, quantity, status, created_at) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := config.DB.Exec(query, cmd.ID, cmd.UserID, cmd.Product, cmd.Quantity, cmd.Status, cmd.CreatedAt)
+	_, err := config.DB.Exec(query, order.ID, order.UserID, order.Product, order.Quantity, order.Status, order.CreatedAt)
 	if err != nil {
 		log.Printf("[DB] Failed to insert order: %v", err)
 	}
@@ -144,6 +144,7 @@ func UpdateOrderStatus(orderID string, status string) error {
 func GetOrderStatistics() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
 
+	// Total orders
 	var totalOrders int
 	err := config.DB.QueryRow("SELECT COUNT(*) FROM orders").Scan(&totalOrders)
 	if err != nil {
@@ -152,6 +153,7 @@ func GetOrderStatistics() (map[string]interface{}, error) {
 	}
 	stats["total_orders"] = totalOrders
 
+	// Orders by status
 	statusQuery := `SELECT status, COUNT(*) FROM orders GROUP BY status`
 	rows, err := config.DB.Query(statusQuery)
 	if err != nil {
@@ -172,6 +174,7 @@ func GetOrderStatistics() (map[string]interface{}, error) {
 	}
 	stats["orders_by_status"] = ordersByStatus
 
+	// Orders today
 	var ordersToday int
 	err = config.DB.QueryRow("SELECT COUNT(*) FROM orders WHERE DATE(created_at) = CURRENT_DATE").Scan(&ordersToday)
 	if err != nil {
@@ -180,6 +183,7 @@ func GetOrderStatistics() (map[string]interface{}, error) {
 	}
 	stats["orders_today"] = ordersToday
 
+	// Most popular products
 	productQuery := `SELECT product, COUNT(*) as order_count FROM orders GROUP BY product ORDER BY order_count DESC LIMIT 5`
 	productRows, err := config.DB.Query(productQuery)
 	if err != nil {
