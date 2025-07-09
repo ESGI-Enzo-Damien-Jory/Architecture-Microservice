@@ -7,14 +7,14 @@ COPY go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -o command-service
+RUN go build -o order-service
 
 FROM gcr.io/distroless/base-debian12
 
 WORKDIR /app
 
-COPY --from=builder /app/command-service .
+COPY --from=builder /app/order-service .
 
 EXPOSE 5000
 
-ENTRYPOINT ["/app/command-service"]
+ENTRYPOINT ["/app/order-service"]

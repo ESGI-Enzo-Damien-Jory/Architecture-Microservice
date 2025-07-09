@@ -23,12 +23,12 @@ func InitRabbitMQ() {
 	}
 
 	_, err = RabbitMQChannel.QueueDeclare(
-		"orders", // queue name
-		true,     // durable
-		false,    // auto-delete
-		false,    // exclusive
-		false,    // no-wait
-		nil,      // args
+		"orders",
+		true,
+		false,
+		false,
+		false,
+		nil,
 	)
 	if err != nil {
 		log.Fatalf("❌ Failed to declare queue: %v", err)
