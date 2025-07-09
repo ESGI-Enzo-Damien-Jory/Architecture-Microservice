@@ -93,16 +93,27 @@ func GetOrdersByUser(c *fiber.Ctx) error {
 		}
 
 	case "delivery":
-		// Delivery can see orders that are ready for delivery
-		readyOrders, fetchErr := repository.GetOrdersByStatus("ready")
-		if fetchErr != nil {
-			log.Printf("[ORDER] Failed to fetch ready orders for delivery: %v", fetchErr)
-			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch orders"})
+		// Delivery can see orders that are preparing (to plan ahead) and ready (for pickup)
+		preparingOrders, fetchErr1 := repository.GetOrdersByStatus("preparing")
+		readyOrders, fetchErr2 := repository.GetOrdersByStatus("ready")
+		
+		if fetchErr1 != nil {
+			log.Printf("[ORDER] Failed to fetch preparing orders for delivery: %v", fetchErr1)
+			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch preparing orders"})
 		}
-		orders = make([]interface{}, len(readyOrders))
-		for i, order := range readyOrders {
+		if fetchErr2 != nil {
+			log.Printf("[ORDER] Failed to fetch ready orders for delivery: %v", fetchErr2)
+			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch ready orders"})
+		}
+		
+		allDeliveryOrders := append(preparingOrders, readyOrders...)
+		orders = make([]interface{}, len(allDeliveryOrders))
+		for i, order := range allDeliveryOrders {
 			orders[i] = order
 		}
+		
+		log.Printf("[ORDER] Delivery user %s can see %d preparing orders and %d ready orders", 
+			userID, len(preparingOrders), len(readyOrders))
 
 	case "admin":
 		allOrders, fetchErr := repository.GetAllOrders()
