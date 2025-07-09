@@ -97,6 +97,7 @@ services:
         condition: service_healthy
     ports:
       - "5003:5000"
+
   order:
     build:
       context: ./order
@@ -166,6 +167,7 @@ services:
       retries: 3
       start_period: 30s
     restart: unless-stopped
+  
   postgres_kitchen:
     image: postgres:16
     container_name: postgres_kitchen

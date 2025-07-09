@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/authStore";
 import { useCartStore } from "@/lib/store/cartStore";
 import { MenuService } from "@/lib/services/menuService";
 import { UserService, UserProfile } from "@/lib/services/userService";
+import { OrderService } from "@/lib/services/orderService";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -144,19 +145,28 @@ export default function CartPage() {
 
       try {
         await UserService.updateProfile({
-            firstName: customerInfo.firstName,
-            lastName: customerInfo.lastName,
-            phone: customerInfo.phone,
-            address: customerInfo.address,
-            city: customerInfo.city,
-            zipCode: customerInfo.zipCode,
-            });
-        } catch (err) {
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          phone: customerInfo.phone,
+          address: customerInfo.address,
+          city: customerInfo.city,
+          zipCode: customerInfo.zipCode,
+        });
+      } catch (err) {
         console.error("Error updating user profile:", err);
-        }
+      }
 
-      // TODO: Intégrer avec le service de commande
-      // await OrderService.createOrder(cartItems, customerInfo);
+      const orderItems = cartItems.map((item) => ({
+        type: item.type, // "menu" | "product"
+        id: item.id,
+        quantity: item.quantity,
+        price: item.price, // en centimes
+      }));
+
+      await OrderService.createOrder({
+        items: orderItems,
+        notes: customerInfo.notes || undefined,
+      });
 
       // Simuler l'envoi
       await new Promise((resolve) => setTimeout(resolve, 2000));
