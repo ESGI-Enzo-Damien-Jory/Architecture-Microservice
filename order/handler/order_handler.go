@@ -31,7 +31,7 @@ func CreateOrder(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid input"})
 	}
 
-	
+	// Validation
 	if body.Product == "" {
 		return c.Status(400).JSON(fiber.Map{"error": "Product is required"})
 	}
@@ -67,7 +67,6 @@ func GetOrdersByUser(c *fiber.Ctx) error {
 	log.Printf("[ORDER] Fetching orders for user %s (role: %s)", userID, userRole)
 
 	var orders []interface{}
-	var err error
 
 	switch userRole {
 	case "client":
@@ -82,7 +81,7 @@ func GetOrdersByUser(c *fiber.Ctx) error {
 		}
 
 	case "cook":
-		
+		// Cooks can see all orders to prepare them
 		allOrders, fetchErr := repository.GetAllOrders()
 		if fetchErr != nil {
 			log.Printf("[ORDER] Failed to fetch orders for cook: %v", fetchErr)
@@ -94,7 +93,7 @@ func GetOrdersByUser(c *fiber.Ctx) error {
 		}
 
 	case "delivery":
-		
+		// Delivery can see orders that are ready for delivery
 		readyOrders, fetchErr := repository.GetOrdersByStatus("ready")
 		if fetchErr != nil {
 			log.Printf("[ORDER] Failed to fetch ready orders for delivery: %v", fetchErr)
@@ -141,7 +140,7 @@ func GetOrderById(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{"error": "Order not found"})
 	}
 
-	
+	// Authorization check
 	switch userRole {
 	case "client":
 		if order.UserID != userID {
@@ -149,7 +148,7 @@ func GetOrderById(c *fiber.Ctx) error {
 			return c.Status(403).JSON(fiber.Map{"error": "Access denied"})
 		}
 	case "admin", "cook", "delivery":
-		
+		// These roles can access any order
 		break
 	default:
 		return c.Status(403).JSON(fiber.Map{"error": "Invalid user role"})
@@ -173,7 +172,7 @@ func UpdateOrderStatus(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid input"})
 	}
 
-	
+	// Validate status
 	validStatuses := []string{"pending", "confirmed", "preparing", "ready", "delivered", "cancelled"}
 	isValidStatus := false
 	for _, validStatus := range validStatuses {
@@ -191,21 +190,21 @@ func UpdateOrderStatus(c *fiber.Ctx) error {
 
 	log.Printf("[ORDER] User %s (role: %s) updating order %s status to %s", userID, userRole, orderID, body.Status)
 
-	
+	// Check if order exists first
 	_, err := repository.GetOrderById(orderID)
 	if err != nil {
 		log.Printf("[ORDER] Order %s not found for status update: %v", orderID, err)
 		return c.Status(404).JSON(fiber.Map{"error": "Order not found"})
 	}
 
-	
+	// Update status using service (which will handle database + events)
 	err = service.UpdateOrderStatus(orderID, body.Status)
 	if err != nil {
 		log.Printf("[ORDER] Failed to update order %s status: %v", orderID, err)
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to update order status"})
 	}
 
-	log.Printf("[ORDER] Order %s status updated to %s by user %s", k, body.Status, userID)
+	log.Printf("[ORDER] Order %s status updated to %s by user %s", orderID, body.Status, userID)
 	return c.JSON(fiber.Map{
 		"message":  "Order status updated successfully",
 		"order_id": orderID,
