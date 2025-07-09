@@ -1,25 +1,41 @@
+// kitchen/service/order_service.go
 package service
 
 import (
 	"errors"
 	"kitchen/model"
+	"kitchen/queue"
 	"log"
-
-	"github.com/google/uuid"
 )
 
 var orders = make(map[string]model.Order)
 
+// CreateOrder creates a new kitchen order with auto-generated ID
 func CreateOrder(item string) model.Order {
-	id := uuid.New().String()
+	return CreateOrderWithID("", item)
+}
+
+// CreateOrderWithID creates a kitchen order with a specific ID (for RabbitMQ messages)
+func CreateOrderWithID(id, item string) model.Order {
+	if id == "" {
+		// Generate new ID if not provided (for backwards compatibility)
+		id = generateID()
+	}
+	
 	order := model.Order{
 		ID:     id,
 		Item:   item,
 		Status: "received", // Start with received status
 	}
 	orders[id] = order
-	log.Printf("[SERVICE] Kitchen order created: %+v", order)
+	log.Printf("[SERVICE] Kitchen order created with ID %s: %+v", id, order)
 	return order
+}
+
+// generateID creates a simple UUID-like ID
+func generateID() string {
+	// Simple implementation - in real world, use proper UUID
+	return "kitchen-" + string(rune(len(orders)))
 }
 
 func GetOrder(id string) (model.Order, error) {
@@ -43,6 +59,15 @@ func UpdateOrderStatus(id, status string) (model.Order, error) {
 	order.Status = status
 	orders[id] = order
 	log.Printf("[SERVICE] Kitchen order updated: %+v", order)
+	
+	// If the order is confirmed, notify the order service
+	if status == "confirmed" {
+		log.Printf("[SERVICE] Kitchen order %s confirmed, notifying order service", id)
+		if err := queue.PublishKitchenConfirmation(id); err != nil {
+			log.Printf("[SERVICE] Failed to publish kitchen confirmation: %v", err)
+			// Don't fail the status update if RabbitMQ fails
+		}
+	}
 	
 	return order, nil
 }

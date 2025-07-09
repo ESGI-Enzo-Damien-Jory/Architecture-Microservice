@@ -1,4 +1,4 @@
-// kitchen/queue/consumer.go - Corrections pour votre setup
+// kitchen/queue/consumer.go
 package queue
 
 import (
@@ -16,12 +16,22 @@ import (
 type OrderMessage struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
-	Product   string    `json:"product"`
-	Quantity  int       `json:"quantity"`
 	Status    string    `json:"status"`
+	Notes     *string   `json:"notes"`
+	Items     []OrderItem `json:"items"`
 	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 	EventType string    `json:"event_type"`
+	Service   string    `json:"service"`
+}
+
+type OrderItem struct {
+	ID             string    `json:"id"`
+	OrderID        string    `json:"order_id"`
+	ItemType       string    `json:"item_type"`
+	ItemID         string    `json:"item_id"`
+	Quantity       int       `json:"quantity"`
+	UnitPriceCents int       `json:"unit_price_cents"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 var globalChannel *amqp.Channel
@@ -35,7 +45,7 @@ func ConsumeOrders() {
 	// Retry connection logic
 	var conn *amqp.Connection
 	var err error
-	maxRetries := 30 // Plus d'essais pour attendre RabbitMQ
+	maxRetries := 30
 	retryDelay := 5 * time.Second
 
 	for i := 0; i < maxRetries; i++ {
@@ -103,7 +113,7 @@ func ConsumeOrders() {
 				continue
 			}
 
-			// Process the order in kitchen
+			// Process the order in kitchen with the SAME ID
 			if err := processKitchenOrder(orderMsg); err != nil {
 				log.Printf("❌ [KITCHEN] Failed to process kitchen order: %v", err)
 				msg.Nack(false, true) // Reject and requeue for retry
@@ -117,32 +127,34 @@ func ConsumeOrders() {
 	}()
 }
 
-// processKitchenOrder handles the order processing in kitchen
+// processKitchenOrder creates a kitchen order with the SAME ID as the original order
 func processKitchenOrder(orderMsg OrderMessage) error {
-	// Create order in kitchen service
-	kitchenOrder := service.CreateOrder(orderMsg.Product)
-	log.Printf("🍳 [KITCHEN] Kitchen order created: %+v", kitchenOrder)
+	// Create kitchen order with the SAME ID
+	kitchenOrder := service.CreateOrderWithID(orderMsg.ID, formatItemsForKitchen(orderMsg.Items))
+	log.Printf("🍳 [KITCHEN] Kitchen order created with ID: %s", kitchenOrder.ID)
 
-	// Simulate some processing time (3-5 seconds pour être réaliste)
-	processingTime := 3 + time.Duration(time.Now().UnixNano()%3)*time.Second
-	log.Printf("🍳 [KITCHEN] Processing order %s for %v...", orderMsg.ID, processingTime)
-	time.Sleep(processingTime)
-
-	// Auto-confirm the order (kitchen accepts it)
-	confirmedOrder, err := service.UpdateOrderStatus(kitchenOrder.ID, "confirmed")
-	if err != nil {
-		return fmt.Errorf("failed to confirm kitchen order: %v", err)
-	}
-
-	log.Printf("✅ [KITCHEN] Kitchen confirmed order: %+v", confirmedOrder)
-
-	// Notify the order service that kitchen confirmed the order
-	if err := notifyOrderServiceConfirmed(orderMsg.ID, "confirmed"); err != nil {
-		log.Printf("⚠️ [KITCHEN] Failed to notify order service: %v", err)
-		// Don't return error - kitchen processing was successful
-	}
+	// The kitchen order now waits for cook action
+	// The cook will use /api/orders/:id/confirm to confirm it
+	log.Printf("⏳ [KITCHEN] Kitchen order %s waiting for cook confirmation", kitchenOrder.ID)
 
 	return nil
+}
+
+// formatItemsForKitchen creates a description of items for kitchen
+func formatItemsForKitchen(items []OrderItem) string {
+	if len(items) == 0 {
+		return "No items"
+	}
+
+	description := fmt.Sprintf("%d items: ", len(items))
+	for i, item := range items {
+		if i > 0 {
+			description += ", "
+		}
+		description += fmt.Sprintf("%dx %s", item.Quantity, item.ItemType)
+	}
+	
+	return description
 }
 
 // notifyOrderServiceConfirmed notifies the order service that kitchen confirmed the order
@@ -200,4 +212,9 @@ func notifyOrderServiceConfirmed(orderID, status string) error {
 
 	log.Printf("📤 [KITCHEN] Kitchen confirmation sent for order %s", orderID)
 	return nil
+}
+
+// PublishKitchenConfirmation is called when cook confirms an order
+func PublishKitchenConfirmation(orderID string) error {
+	return notifyOrderServiceConfirmed(orderID, "confirmed")
 }

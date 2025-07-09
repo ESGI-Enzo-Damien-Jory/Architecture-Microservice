@@ -1,4 +1,4 @@
-// kitchen/handlers/order_handler.go - Updated for RabbitMQ flow
+// kitchen/handlers/order_handler.go
 package handler
 
 import (
@@ -27,7 +27,6 @@ func GetOrder(c *fiber.Ctx) error {
 }
 
 // UpdateOrderStatus - Cook confirms/updates kitchen order status
-// This is the key endpoint for cooks to confirm orders
 func UpdateOrderStatus(c *fiber.Ctx) error {
 	id := c.Params("id")
 	log.Printf("[KITCHEN] Cook updating status for kitchen order ID: %s", id)
@@ -101,17 +100,19 @@ func GetPreparingOrders(c *fiber.Ctx) error {
 }
 
 // ConfirmOrder - Shortcut endpoint for cooks to confirm orders
+// This is the KEY endpoint that triggers the RabbitMQ message to order service
 func ConfirmOrder(c *fiber.Ctx) error {
 	id := c.Params("id")
 	log.Printf("[KITCHEN] Cook confirming kitchen order: %s", id)
 	
+	// This will call service.UpdateOrderStatus which will trigger RabbitMQ message
 	order, err := service.UpdateOrderStatus(id, "confirmed")
 	if err != nil {
 		log.Printf("[KITCHEN] Failed to confirm kitchen order %s: %v", id, err)
 		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
 	}
 	
-	log.Printf("[KITCHEN] Kitchen order %s confirmed successfully", id)
+	log.Printf("[KITCHEN] Kitchen order %s confirmed successfully - message sent to order service", id)
 	return c.JSON(fiber.Map{
 		"message": "Order confirmed successfully",
 		"order":   order,

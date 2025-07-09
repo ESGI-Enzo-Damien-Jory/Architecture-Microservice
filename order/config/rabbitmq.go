@@ -1,4 +1,4 @@
-// order/config/rabbitmq.go - Mise à jour pour votre setup
+// order/config/rabbitmq.go
 package config
 
 import (
@@ -55,11 +55,10 @@ func InitRabbitMQ() {
 
 func declareQueues() {
 	queues := []string{
-		"kitchen_orders",
-		"kitchen_confirmations", 
-		"delivery_orders",
-		"delivery_updates",
-		"order_updates",
+		"kitchen_orders",        // Order service -> Kitchen service
+		"kitchen_confirmations", // Kitchen service -> Order service
+		"delivery_orders",       // Order service -> Delivery service
+		"delivery_updates",      // Delivery service -> Other services
 	}
 
 	for _, queueName := range queues {

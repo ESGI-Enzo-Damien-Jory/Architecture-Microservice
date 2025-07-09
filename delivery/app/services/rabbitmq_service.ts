@@ -1,14 +1,26 @@
+// delivery/app/services/rabbitmq_service.ts
 import db from '@adonisjs/lucid/services/db'
 
 interface OrderMessage {
   id: string
   user_id: string
-  product: string
-  quantity: number
   status: string
+  notes?: string
+  items: OrderItem[]
   created_at: string
-  updated_at: string
+  updated_at?: string
   event_type: string
+  service: string
+}
+
+interface OrderItem {
+  id: string
+  order_id: string
+  item_type: string
+  item_id: string
+  quantity: number
+  unit_price_cents: number
+  created_at: string
 }
 
 class RabbitMQService {
@@ -77,6 +89,13 @@ class RabbitMQService {
         const orderData: OrderMessage = JSON.parse(msg.content.toString())
         console.log('📦 [DELIVERY] Delivery received confirmed order:', orderData)
 
+        // Only process confirmed orders
+        if (orderData.event_type !== 'order_confirmed' || orderData.service !== 'order') {
+          console.log('❌ [DELIVERY] Invalid message type or service')
+          this.channel.nack(msg, false, false)
+          return
+        }
+
         // Process the confirmed order
         await this.processConfirmedOrder(orderData)
 
@@ -107,7 +126,7 @@ class RabbitMQService {
         return
       }
 
-      // Create delivery record
+      // Create delivery record with the SAME ID as the order
       const delivery = await db
         .insertQuery()
         .table('deliveries')
@@ -122,7 +141,7 @@ class RabbitMQService {
 
       console.log(`🚚 [DELIVERY] Delivery created for order ${orderData.id}:`, delivery[0])
 
-      // Optionally notify other services that delivery is available
+      // Notify other services that delivery is available
       await this.publishDeliveryCreated(delivery[0])
 
     } catch (error) {
