@@ -8,8 +8,6 @@ import (
 	"os"
 	"time"
 
-	"kitchen/service"
-
 	"github.com/streadway/amqp"
 )
 
@@ -34,7 +32,15 @@ type OrderItem struct {
 	CreatedAt      time.Time `json:"created_at"`
 }
 
+// KitchenOrder represents a kitchen order
+type KitchenOrder struct {
+	ID     string `json:"id"`
+	Item   string `json:"item"`
+	Status string `json:"status"`
+}
+
 var globalChannel *amqp.Channel
+var orders = make(map[string]KitchenOrder) // Store orders locally
 
 func ConsumeOrders() {
 	rabbitmqURL := os.Getenv("RABBITMQ_URL")
@@ -129,12 +135,17 @@ func ConsumeOrders() {
 
 // processKitchenOrder creates a kitchen order with the SAME ID as the original order
 func processKitchenOrder(orderMsg OrderMessage) error {
-	// Create kitchen order with the SAME ID
-	kitchenOrder := service.CreateOrderWithID(orderMsg.ID, formatItemsForKitchen(orderMsg.Items))
+	// Create kitchen order with the SAME ID - directly in queue package
+	kitchenOrder := KitchenOrder{
+		ID:     orderMsg.ID,
+		Item:   formatItemsForKitchen(orderMsg.Items),
+		Status: "received", // Start with received status
+	}
+	
+	orders[orderMsg.ID] = kitchenOrder
 	log.Printf("🍳 [KITCHEN] Kitchen order created with ID: %s", kitchenOrder.ID)
 
 	// The kitchen order now waits for cook action
-	// The cook will use /api/orders/:id/confirm to confirm it
 	log.Printf("⏳ [KITCHEN] Kitchen order %s waiting for cook confirmation", kitchenOrder.ID)
 
 	return nil
@@ -157,8 +168,63 @@ func formatItemsForKitchen(items []OrderItem) string {
 	return description
 }
 
-// notifyOrderServiceConfirmed notifies the order service that kitchen confirmed the order
-func notifyOrderServiceConfirmed(orderID, status string) error {
+// Kitchen order management functions (moved from service package)
+func GetOrder(id string) (KitchenOrder, error) {
+	order, exists := orders[id]
+	if !exists {
+		log.Printf("[QUEUE] Kitchen order %s not found", id)
+		return KitchenOrder{}, fmt.Errorf("order not found")
+	}
+	log.Printf("[QUEUE] Kitchen order found: %+v", order)
+	return order, nil
+}
+
+func UpdateOrderStatus(id, status string) (KitchenOrder, error) {
+	order, exists := orders[id]
+	if !exists {
+		log.Printf("[QUEUE] Kitchen order %s not found for status update", id)
+		return KitchenOrder{}, fmt.Errorf("order not found")
+	}
+	
+	log.Printf("[QUEUE] Updating kitchen order %s from status %s to %s", id, order.Status, status)
+	order.Status = status
+	orders[id] = order
+	log.Printf("[QUEUE] Kitchen order updated: %+v", order)
+	
+	// If the order is confirmed, notify the order service
+	if status == "confirmed" {
+		log.Printf("[QUEUE] Kitchen order %s confirmed, notifying order service", id)
+		if err := PublishKitchenConfirmation(id); err != nil {
+			log.Printf("[QUEUE] Failed to publish kitchen confirmation: %v", err)
+			// Don't fail the status update if RabbitMQ fails
+		}
+	}
+	
+	return order, nil
+}
+
+func ListOrders() []KitchenOrder {
+	orderList := []KitchenOrder{}
+	for _, order := range orders {
+		orderList = append(orderList, order)
+	}
+	log.Printf("[QUEUE] Listed %d kitchen orders", len(orderList))
+	return orderList
+}
+
+func GetOrdersByStatus(status string) []KitchenOrder {
+	orderList := []KitchenOrder{}
+	for _, order := range orders {
+		if order.Status == status {
+			orderList = append(orderList, order)
+		}
+	}
+	log.Printf("[QUEUE] Found %d kitchen orders with status %s", len(orderList), status)
+	return orderList
+}
+
+// PublishKitchenConfirmation sends confirmation to order service
+func PublishKitchenConfirmation(orderID string) error {
 	if globalChannel == nil {
 		return fmt.Errorf("RabbitMQ channel not available")
 	}
@@ -178,7 +244,7 @@ func notifyOrderServiceConfirmed(orderID, status string) error {
 
 	confirmation := map[string]interface{}{
 		"order_id":     orderID,
-		"status":       status,
+		"status":       "confirmed",
 		"confirmed_at": time.Now(),
 		"event_type":   "kitchen_confirmed",
 		"service":      "kitchen",
@@ -212,9 +278,4 @@ func notifyOrderServiceConfirmed(orderID, status string) error {
 
 	log.Printf("📤 [KITCHEN] Kitchen confirmation sent for order %s", orderID)
 	return nil
-}
-
-// PublishKitchenConfirmation is called when cook confirms an order
-func PublishKitchenConfirmation(orderID string) error {
-	return notifyOrderServiceConfirmed(orderID, "confirmed")
 }
