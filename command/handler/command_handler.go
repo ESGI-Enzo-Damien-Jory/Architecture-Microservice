@@ -61,13 +61,12 @@ func GetOrdersByUser(c *fiber.Ctx) error {
 	log.Printf("[ORDER] Fetching orders for user %s (role: %s)", userID, userRole)
 
 	var commands []interface{}
-	var err error
 
 	switch userRole {
 	case "client":
-		clientCommands, clientErr := repository.GetCommandsByUser(userID)
-		if clientErr != nil {
-			log.Printf("[ORDER] Failed to fetch client orders: %v", clientErr)
+		clientCommands, err := repository.GetCommandsByUser(userID)
+		if err != nil {
+			log.Printf("[ORDER] Failed to fetch client orders: %v", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch orders"})
 		}
 		commands = make([]interface{}, len(clientCommands))
@@ -76,9 +75,9 @@ func GetOrdersByUser(c *fiber.Ctx) error {
 		}
 
 	case "admin":
-		allCommands, adminErr := repository.GetAllCommands()
-		if adminErr != nil {
-			log.Printf("[ORDER] Failed to fetch all orders for admin: %v", adminErr)
+		allCommands, err := repository.GetAllCommands()
+		if err != nil {
+			log.Printf("[ORDER] Failed to fetch all orders for admin: %v", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch orders"})
 		}
 		commands = make([]interface{}, len(allCommands))
@@ -87,9 +86,9 @@ func GetOrdersByUser(c *fiber.Ctx) error {
 		}
 
 	case "cook":
-		cookCommands, cookErr := repository.GetAllCommands()
-		if cookErr != nil {
-			log.Printf("[ORDER] Failed to fetch orders for cook: %v", cookErr)
+		cookCommands, err := repository.GetAllCommands()
+		if err != nil {
+			log.Printf("[ORDER] Failed to fetch orders for cook: %v", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch orders"})
 		}
 		commands = make([]interface{}, len(cookCommands))

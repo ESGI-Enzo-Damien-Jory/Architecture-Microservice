@@ -1,34 +1,20 @@
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24.4 AS builder
 
 WORKDIR /app
-
 
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 
 COPY . .
+RUN go build -o command-service
 
+FROM gcr.io/distroless/base-debian12
 
-RUN go build -o command-service .
-
-
-FROM alpine:latest
-
-
-RUN apk --no-cache add ca-certificates
-
-WORKDIR /root/
-
+WORKDIR /app
 
 COPY --from=builder /app/command-service .
 
-
-COPY .env .env
-COPY secrets/public.pem /secrets/public.pem
-
-
 EXPOSE 5000
 
-
-CMD ["./command-service"]
+ENTRYPOINT ["/app/command-service"]
