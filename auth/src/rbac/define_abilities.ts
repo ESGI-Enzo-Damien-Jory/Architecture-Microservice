@@ -4,18 +4,18 @@ export const define_abilities_for = (role: string) => {
   const { can, cannot, build } = new AbilityBuilder(createMongoAbility);
 
   if (role === "client") {
-    can("create", "Commande");
-    can("read", "Commande", { ownerId: "self" });
+    can("create", "Order");
+    can("read", "Order", { ownerId: "self" });
   }
 
   if (role === "cook") {
-    can("update", "Commande");
-    can("read", "Commande");
+    can("update", "Order");
+    can("read", "Order");
   }
 
   if (role === "delivery") {
-    can("read", "Commande");
-    can("update", "Commande", { status: "ready" });
+    can("read", "Order");
+    can("update", "Order", { status: "ready" });
   }
 
   if (role === "admin") {

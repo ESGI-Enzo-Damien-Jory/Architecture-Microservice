@@ -57,8 +57,8 @@ const SERVICES = [
     port: "3333",
   },
   {
-    name: "Command Service",
-    url: `${process.env.NEXT_PUBLIC_COMMAND_SERVICE_URL}/health`,
+    name: "Order Service",
+    url: `${process.env.NEXT_PUBLIC_ORDER_SERVICE_URL}/health`,
     icon: PackageCheck,
     port: "5002",
   },
