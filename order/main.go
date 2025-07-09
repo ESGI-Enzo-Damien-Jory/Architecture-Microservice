@@ -1,3 +1,4 @@
+// order/main.go
 package main
 
 import (
@@ -25,7 +26,7 @@ func main() {
 	defer config.RabbitMQConn.Close()
 	defer config.RabbitMQChannel.Close()
 
-	// Start kitchen confirmation consumer
+	// Start all kitchen message consumers
 	go queue.StartKitchenConfirmationConsumer()
 
 	// Create Fiber app
@@ -59,5 +60,6 @@ func main() {
 
 	log.Printf("🚀 Order service starting on port %s", port)
 	log.Printf("📡 Kitchen confirmation consumer started")
+	log.Printf("📡 Kitchen status update consumer started")
 	log.Fatal(app.Listen(":" + port))
 }

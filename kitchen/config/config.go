@@ -2,6 +2,7 @@ package config
 
 import (
 	handler "kitchen/handlers"
+	"kitchen/middleware"
 	"os"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 var startTime = time.Now()
 
 func SetupRoutes(app *fiber.App) {
-	// Health check
+	// Health check (no auth required)
 	app.Get("/health", func(c *fiber.Ctx) error {
 		healthData := fiber.Map{
 			"status":    "healthy",
@@ -36,11 +37,11 @@ func SetupRoutes(app *fiber.App) {
 		return c.JSON(healthData)
 	})
 
-	// API routes for kitchen operations
-	api := app.Group("/api")
+	// API routes with authentication
+	api := app.Group("/api", middleware.VerifyJWT)
 
-	// Kitchen order management (for cooks)
-	orders := api.Group("/orders")
+	// Kitchen order management (for cooks and admins only)
+	orders := api.Group("/orders", middleware.RequireRole("cook", "admin"))
 	
 	// Get all kitchen orders
 	orders.Get("/", handler.ListOrders)

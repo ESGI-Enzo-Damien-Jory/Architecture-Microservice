@@ -21,6 +21,14 @@ type KitchenConfirmation struct {
 	Service     string    `json:"service"`
 }
 
+type KitchenStatusUpdate struct {
+	OrderID   string    `json:"order_id"`
+	Status    string    `json:"status"`
+	UpdatedAt time.Time `json:"updated_at"`
+	EventType string    `json:"event_type"`
+	Service   string    `json:"service"`
+}
+
 func StartKitchenConfirmationConsumer() {
 	rabbitmqURL := os.Getenv("RABBITMQ_URL")
 	if rabbitmqURL == "" {
@@ -34,10 +42,10 @@ func StartKitchenConfirmationConsumer() {
 	retryDelay := 5 * time.Second
 
 	for i := 0; i < maxRetries; i++ {
-		log.Printf("🔄 [ORDER] Connecting to RabbitMQ for kitchen confirmations (attempt %d/%d)...", i+1, maxRetries)
+		log.Printf("🔄 [ORDER] Connecting to RabbitMQ for kitchen messages (attempt %d/%d)...", i+1, maxRetries)
 		conn, err = amqp091.Dial(rabbitmqURL)
 		if err == nil {
-			log.Println("✅ [ORDER] Connected to RabbitMQ for kitchen confirmations")
+			log.Println("✅ [ORDER] Connected to RabbitMQ for kitchen messages")
 			break
 		}
 		log.Printf("❌ [ORDER] Failed to connect: %v", err)
@@ -53,11 +61,17 @@ func StartKitchenConfirmationConsumer() {
 
 	ch, err := conn.Channel()
 	if err != nil {
-		log.Fatalf("❌ [ORDER] Failed to open channel for confirmations: %v", err)
+		log.Fatalf("❌ [ORDER] Failed to open channel for kitchen messages: %v", err)
 	}
 
+	// Start both consumers
+	go consumeKitchenConfirmations(ch)
+	go consumeKitchenStatusUpdates(ch)
+}
+
+func consumeKitchenConfirmations(ch *amqp091.Channel) {
 	// Declare kitchen_confirmations queue
-	_, err = ch.QueueDeclare(
+	_, err := ch.QueueDeclare(
 		"kitchen_confirmations", // name
 		true,                   // durable
 		false,                  // delete when unused
@@ -71,7 +85,7 @@ func StartKitchenConfirmationConsumer() {
 
 	msgs, err := ch.Consume(
 		"kitchen_confirmations", // queue
-		"order-service",        // consumer tag
+		"order-confirmations",  // consumer tag
 		false,                  // auto-ack
 		false,                  // exclusive
 		false,                  // no-local
@@ -84,35 +98,91 @@ func StartKitchenConfirmationConsumer() {
 
 	log.Println("📡 [ORDER] Listening for kitchen confirmations...")
 
-	go func() {
-		for msg := range msgs {
-			log.Printf("📦 [ORDER] Received kitchen confirmation: %s", msg.Body)
+	for msg := range msgs {
+		log.Printf("📦 [ORDER] Received kitchen confirmation: %s", msg.Body)
 
-			var confirmation KitchenConfirmation
-			if err := json.Unmarshal(msg.Body, &confirmation); err != nil {
-				log.Printf("❌ [ORDER] Invalid confirmation format: %v", err)
-				msg.Nack(false, false) // Reject and don't requeue
-				continue
-			}
-
-			// Verify this is a kitchen confirmation
-			if confirmation.EventType != "kitchen_confirmed" || confirmation.Service != "kitchen" {
-				log.Printf("❌ [ORDER] Invalid confirmation event type or service: %s/%s", confirmation.EventType, confirmation.Service)
-				msg.Nack(false, false)
-				continue
-			}
-
-			// Update order status to confirmed
-			if err := processKitchenConfirmation(confirmation); err != nil {
-				log.Printf("❌ [ORDER] Failed to process kitchen confirmation: %v", err)
-				msg.Nack(false, true) // Reject and requeue for retry
-				continue
-			}
-
-			msg.Ack(false)
-			log.Printf("✅ [ORDER] Kitchen confirmation processed for order %s", confirmation.OrderID)
+		var confirmation KitchenConfirmation
+		if err := json.Unmarshal(msg.Body, &confirmation); err != nil {
+			log.Printf("❌ [ORDER] Invalid confirmation format: %v", err)
+			msg.Nack(false, false) // Reject and don't requeue
+			continue
 		}
-	}()
+
+		// Verify this is a kitchen confirmation
+		if confirmation.EventType != "kitchen_confirmed" || confirmation.Service != "kitchen" {
+			log.Printf("❌ [ORDER] Invalid confirmation event type or service: %s/%s", confirmation.EventType, confirmation.Service)
+			msg.Nack(false, false)
+			continue
+		}
+
+		// Update order status to confirmed
+		if err := processKitchenConfirmation(confirmation); err != nil {
+			log.Printf("❌ [ORDER] Failed to process kitchen confirmation: %v", err)
+			msg.Nack(false, true) // Reject and requeue for retry
+			continue
+		}
+
+		msg.Ack(false)
+		log.Printf("✅ [ORDER] Kitchen confirmation processed for order %s", confirmation.OrderID)
+	}
+}
+
+func consumeKitchenStatusUpdates(ch *amqp091.Channel) {
+	// Declare kitchen_status_updates queue
+	_, err := ch.QueueDeclare(
+		"kitchen_status_updates", // name
+		true,                    // durable
+		false,                   // delete when unused
+		false,                   // exclusive
+		false,                   // no-wait
+		nil,                     // arguments
+	)
+	if err != nil {
+		log.Fatalf("❌ [ORDER] Failed to declare kitchen_status_updates queue: %v", err)
+	}
+
+	msgs, err := ch.Consume(
+		"kitchen_status_updates", // queue
+		"order-status-updates",   // consumer tag
+		false,                   // auto-ack
+		false,                   // exclusive
+		false,                   // no-local
+		false,                   // no-wait
+		nil,                     // args
+	)
+	if err != nil {
+		log.Fatalf("❌ [ORDER] Failed to register kitchen status updates consumer: %v", err)
+	}
+
+	log.Println("📡 [ORDER] Listening for kitchen status updates...")
+
+	for msg := range msgs {
+		log.Printf("📦 [ORDER] Received kitchen status update: %s", msg.Body)
+
+		var statusUpdate KitchenStatusUpdate
+		if err := json.Unmarshal(msg.Body, &statusUpdate); err != nil {
+			log.Printf("❌ [ORDER] Invalid status update format: %v", err)
+			msg.Nack(false, false) // Reject and don't requeue
+			continue
+		}
+
+		// Verify this is a kitchen status update
+		if statusUpdate.EventType != "kitchen_status_updated" || statusUpdate.Service != "kitchen" {
+			log.Printf("❌ [ORDER] Invalid status update event type or service: %s/%s", statusUpdate.EventType, statusUpdate.Service)
+			msg.Nack(false, false)
+			continue
+		}
+
+		// Update order status
+		if err := processKitchenStatusUpdate(statusUpdate); err != nil {
+			log.Printf("❌ [ORDER] Failed to process kitchen status update: %v", err)
+			msg.Nack(false, true) // Reject and requeue for retry
+			continue
+		}
+
+		msg.Ack(false)
+		log.Printf("✅ [ORDER] Kitchen status update processed for order %s: %s", statusUpdate.OrderID, statusUpdate.Status)
+	}
 }
 
 func processKitchenConfirmation(confirmation KitchenConfirmation) error {
@@ -142,5 +212,40 @@ func processKitchenConfirmation(confirmation KitchenConfirmation) error {
 	}
 
 	log.Printf("✅ [ORDER] Order %s confirmed by kitchen and sent to delivery", confirmation.OrderID)
+	return nil
+}
+
+func processKitchenStatusUpdate(statusUpdate KitchenStatusUpdate) error {
+	log.Printf("[ORDER] Processing kitchen status update for order %s: %s", statusUpdate.OrderID, statusUpdate.Status)
+	
+	// Check if order exists
+	order, err := repository.GetOrderById(statusUpdate.OrderID)
+	if err != nil {
+		log.Printf("❌ [ORDER] Order %s not found for kitchen status update: %v", statusUpdate.OrderID, err)
+		return err
+	}
+
+	log.Printf("[ORDER] Order %s found with current status: %s", statusUpdate.OrderID, order.Status)
+
+	// Map kitchen status to order status
+	var orderStatus model.OrderStatus
+	switch statusUpdate.Status {
+	case "preparing":
+		orderStatus = model.StatusPreparing
+	case "ready":
+		orderStatus = model.StatusReady
+	default:
+		log.Printf("[ORDER] Unknown kitchen status: %s", statusUpdate.Status)
+		return nil
+	}
+
+	// Update order status
+	err = service.UpdateOrderStatus(statusUpdate.OrderID, orderStatus)
+	if err != nil {
+		log.Printf("❌ [ORDER] Failed to update order %s status to %s: %v", statusUpdate.OrderID, orderStatus, err)
+		return err
+	}
+
+	log.Printf("✅ [ORDER] Order %s status updated to %s", statusUpdate.OrderID, orderStatus)
 	return nil
 }

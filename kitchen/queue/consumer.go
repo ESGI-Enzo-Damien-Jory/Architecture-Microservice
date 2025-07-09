@@ -80,18 +80,8 @@ func ConsumeOrders() {
 	// Store channel globally for publishing
 	globalChannel = ch
 
-	// Declare kitchen_orders queue
-	_, err = ch.QueueDeclare(
-		"kitchen_orders", // name
-		true,            // durable
-		false,           // delete when unused
-		false,           // exclusive
-		false,           // no-wait
-		nil,             // arguments
-	)
-	if err != nil {
-		log.Fatalf("❌ [KITCHEN] Failed to declare kitchen_orders queue: %v", err)
-	}
+	// Declare all required queues
+	declareQueues()
 
 	msgs, err := ch.Consume(
 		"kitchen_orders", // queue
@@ -133,6 +123,29 @@ func ConsumeOrders() {
 	}()
 }
 
+func declareQueues() {
+	queues := []string{
+		"kitchen_orders",        // Order service -> Kitchen service
+		"kitchen_confirmations", // Kitchen service -> Order service
+		"kitchen_status_updates", // Kitchen service -> Other services
+	}
+
+	for _, queueName := range queues {
+		_, err := globalChannel.QueueDeclare(
+			queueName, // name
+			true,      // durable
+			false,     // delete when unused
+			false,     // exclusive
+			false,     // no-wait
+			nil,       // arguments
+		)
+		if err != nil {
+			log.Fatalf("❌ [KITCHEN] Failed to declare queue %s: %v", queueName, err)
+		}
+		log.Printf("✅ [KITCHEN] Queue %s declared", queueName)
+	}
+}
+
 // processKitchenOrder creates a kitchen order with the SAME ID as the original order
 func processKitchenOrder(orderMsg OrderMessage) error {
 	// Create kitchen order with the SAME ID - directly in queue package
@@ -168,7 +181,7 @@ func formatItemsForKitchen(items []OrderItem) string {
 	return description
 }
 
-// Kitchen order management functions (moved from service package)
+// Kitchen order management functions
 func GetOrder(id string) (KitchenOrder, error) {
 	order, exists := orders[id]
 	if !exists {
@@ -191,12 +204,22 @@ func UpdateOrderStatus(id, status string) (KitchenOrder, error) {
 	orders[id] = order
 	log.Printf("[QUEUE] Kitchen order updated: %+v", order)
 	
-	// If the order is confirmed, notify the order service
-	if status == "confirmed" {
+	// Publish status update for different events
+	switch status {
+	case "confirmed":
 		log.Printf("[QUEUE] Kitchen order %s confirmed, notifying order service", id)
 		if err := PublishKitchenConfirmation(id); err != nil {
 			log.Printf("[QUEUE] Failed to publish kitchen confirmation: %v", err)
-			// Don't fail the status update if RabbitMQ fails
+		}
+	case "preparing":
+		log.Printf("[QUEUE] Kitchen order %s started preparation", id)
+		if err := PublishKitchenStatusUpdate(id, "preparing"); err != nil {
+			log.Printf("[QUEUE] Failed to publish preparation status: %v", err)
+		}
+	case "ready":
+		log.Printf("[QUEUE] Kitchen order %s ready for delivery", id)
+		if err := PublishKitchenStatusUpdate(id, "ready"); err != nil {
+			log.Printf("[QUEUE] Failed to publish ready status: %v", err)
 		}
 	}
 	
@@ -227,19 +250,6 @@ func GetOrdersByStatus(status string) []KitchenOrder {
 func PublishKitchenConfirmation(orderID string) error {
 	if globalChannel == nil {
 		return fmt.Errorf("RabbitMQ channel not available")
-	}
-
-	// Declare queue for kitchen confirmations
-	_, err := globalChannel.QueueDeclare(
-		"kitchen_confirmations", // name
-		true,                   // durable
-		false,                  // delete when unused
-		false,                  // exclusive
-		false,                  // no-wait
-		nil,                    // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare kitchen_confirmations queue: %v", err)
 	}
 
 	confirmation := map[string]interface{}{
@@ -277,5 +287,50 @@ func PublishKitchenConfirmation(orderID string) error {
 	}
 
 	log.Printf("📤 [KITCHEN] Kitchen confirmation sent for order %s", orderID)
+	return nil
+}
+
+// PublishKitchenStatusUpdate sends status updates to other services
+func PublishKitchenStatusUpdate(orderID, status string) error {
+	if globalChannel == nil {
+		return fmt.Errorf("RabbitMQ channel not available")
+	}
+
+	statusUpdate := map[string]interface{}{
+		"order_id":     orderID,
+		"status":       status,
+		"updated_at":   time.Now(),
+		"event_type":   "kitchen_status_updated",
+		"service":      "kitchen",
+	}
+
+	payload, err := json.Marshal(statusUpdate)
+	if err != nil {
+		return fmt.Errorf("failed to marshal status update: %v", err)
+	}
+
+	err = globalChannel.Publish(
+		"",                       // exchange
+		"kitchen_status_updates", // routing key
+		false,                    // mandatory
+		false,                    // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        payload,
+			Timestamp:   time.Now(),
+			Headers: amqp.Table{
+				"event_type": "kitchen_status_updated",
+				"service":    "kitchen",
+				"order_id":   orderID,
+				"status":     status,
+			},
+		},
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to publish status update: %v", err)
+	}
+
+	log.Printf("📤 [KITCHEN] Kitchen status update sent for order %s: %s", orderID, status)
 	return nil
 }
