@@ -13,8 +13,10 @@ import (
 )
 
 func main() {
+	// Load environment variables
 	_ = godotenv.Load()
 
+	// Initialize database and RabbitMQ connections
 	config.InitPostgres()
 	defer config.DB.Close()
 	
@@ -22,6 +24,7 @@ func main() {
 	defer config.RabbitMQConn.Close()
 	defer config.RabbitMQChannel.Close()
 
+	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
@@ -33,15 +36,18 @@ func main() {
 		},
 	})
 
+	// Add CORS middleware - FIXED: Added POST, PUT, PATCH, DELETE methods
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:3000,http://localhost:3002",
-		AllowMethods:     "GET",
+		AllowMethods:     "GET,POST,PUT,PATCH,DELETE,OPTIONS",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
 		AllowCredentials: true,
 	}))
 
+	// Setup routes
 	routes.SetupRoutes(app)
 
+	// Get port from environment
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "5000"
