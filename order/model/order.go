@@ -2,52 +2,44 @@ package model
 
 import "time"
 
-type Order struct {
-	ID        string    `json:"id" db:"id"`
-	UserID    string    `json:"user_id" db:"user_id"`
-	Product   string    `json:"product" db:"product"`
-	Quantity  int       `json:"quantity" db:"quantity"`
-	Status    string    `json:"status" db:"status"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
-}
-
 type OrderStatus string
 
 const (
-	StatusPending    OrderStatus = "pending"
-	StatusConfirmed  OrderStatus = "confirmed"
-	StatusPreparing  OrderStatus = "preparing"
-	StatusReady      OrderStatus = "ready"
-	StatusDelivered  OrderStatus = "delivered"
-	StatusCancelled  OrderStatus = "cancelled"
+	StatusPending   OrderStatus = "pending"
+	StatusConfirmed OrderStatus = "confirmed"
+	StatusPreparing OrderStatus = "preparing"
+	StatusReady     OrderStatus = "ready"
+	StatusDelivered OrderStatus = "delivered"
+	StatusCancelled OrderStatus = "cancelled"
 )
 
-func IsValidStatus(status string) bool {
-	validStatuses := []OrderStatus{
-		StatusPending,
-		StatusConfirmed,
-		StatusPreparing,
-		StatusReady,
-		StatusDelivered,
-		StatusCancelled,
-	}
-	
-	for _, validStatus := range validStatuses {
-		if OrderStatus(status) == validStatus {
-			return true
-		}
-	}
-	return false
+type Order struct {
+	ID              string       `json:"id"`
+	UserID          string       `json:"user_id"`
+	Status          OrderStatus  `json:"status"`
+	Notes           *string      `json:"notes,omitempty"`
+	TotalPriceCents int          `json:"total_price_cents"`
+	CreatedAt       time.Time    `json:"created_at"`
+	UpdatedAt       time.Time    `json:"updated_at"`
+	Items           []OrderItem  `json:"items,omitempty"`
 }
 
-func GetValidStatuses() []string {
-	return []string{
-		string(StatusPending),
-		string(StatusConfirmed),
-		string(StatusPreparing),
-		string(StatusReady),
-		string(StatusDelivered),
-		string(StatusCancelled),
+type OrderItem struct {
+    ID             string    `json:"id"`
+    OrderID        string    `json:"order_id"`
+    ItemType       string    `json:"item_type"`        // "product" | "menu"
+    ItemID         string    `json:"item_id"`          // uuid de l'item
+    Quantity       int       `json:"quantity"`
+    UnitPriceCents int       `json:"unit_price_cents"`
+    CreatedAt      time.Time `json:"created_at"`
+    UpdatedAt      time.Time `json:"updated_at"`
+}
+
+func IsValidStatus(s string) bool {
+	switch OrderStatus(s) {
+	case StatusPending, StatusConfirmed, StatusPreparing, StatusReady, StatusDelivered, StatusCancelled:
+		return true
+	default:
+		return false
 	}
 }

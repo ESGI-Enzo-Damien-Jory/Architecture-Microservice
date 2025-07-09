@@ -1,9 +1,11 @@
+// handler/order.go
 package handler
 
 import (
+	"log"
+	"order/model"
 	"order/repository"
 	"order/service"
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,249 +16,132 @@ func HealthCheck(c *fiber.Ctx) error {
 		"status":    "healthy",
 		"service":   "order",
 		"timestamp": time.Now().Format(time.RFC3339),
-		"database":  "connected",
-		"rabbitmq":  "connected",
 	})
 }
 
 func CreateOrder(c *fiber.Ctx) error {
-	type request struct {
-		Product  string `json:"product"`
+	type itemReq struct {
+		Type     string `json:"type"`     // "product" | "menu"
+		ID       string `json:"id"`
 		Quantity int    `json:"quantity"`
+		Price    int    `json:"price"` // cents
 	}
-
-	var body request
+	var body struct {
+		Items []itemReq `json:"items"`
+		Notes *string   `json:"notes"`
+	}
 	if err := c.BodyParser(&body); err != nil {
-		log.Printf("[ORDER] Invalid request body: %v", err)
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid input"})
 	}
-
-	// Validation
-	if body.Product == "" {
-		return c.Status(400).JSON(fiber.Map{"error": "Product is required"})
+	if len(body.Items) == 0 {
+		return c.Status(400).JSON(fiber.Map{"error": "At least one item required"})
 	}
-	if body.Quantity <= 0 {
-		return c.Status(400).JSON(fiber.Map{"error": "Quantity must be greater than 0"})
+
+	var items []service.CreateItem
+	for _, it := range body.Items {
+		if it.Quantity <= 0 || it.Price < 0 || (it.Type != "product" && it.Type != "menu") || it.ID == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid item data"})
+		}
+		items = append(items, service.CreateItem{
+			ItemType: it.Type,
+			ItemID:   it.ID,
+			Quantity: it.Quantity,
+			Price:    it.Price,
+		})
 	}
 
 	userID := c.Locals("userID").(string)
-	userRole := c.Locals("userRole").(string)
-
-	log.Printf("[ORDER] Creating order for user %s (role: %s): %s x%d", userID, userRole, body.Product, body.Quantity)
-
-	orderID, err := service.CreateOrder(userID, body.Product, body.Quantity)
+	orderID, err := service.CreateOrder(userID, items, body.Notes)
 	if err != nil {
-		log.Printf("[ORDER] Failed to create order: %v", err)
+		log.Printf("[HANDLER] CreateOrder failed: %v", err)
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to create order"})
 	}
-
-	log.Printf("[ORDER] Order %s created successfully for user %s", orderID, userID)
-	return c.Status(201).JSON(fiber.Map{
-		"message":  "Order created successfully",
-		"order_id": orderID,
-		"product":  body.Product,
-		"quantity": body.Quantity,
-		"status":   "pending",
-	})
+	return c.Status(201).JSON(fiber.Map{"order_id": orderID, "status": model.StatusPending})
 }
 
 func GetOrdersByUser(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(string)
-	userRole := c.Locals("userRole").(string)
+	role := c.Locals("userRole").(string)
 
-	log.Printf("[ORDER] Fetching orders for user %s (role: %s)", userID, userRole)
-
-	var orders []interface{}
-
-	switch userRole {
+	var result []interface{}
+	switch role {
 	case "client":
-		clientOrders, fetchErr := repository.GetOrdersByUser(userID)
-		if fetchErr != nil {
-			log.Printf("[ORDER] Failed to fetch client orders: %v", fetchErr)
+		o, err := repository.GetOrdersByUser(userID)
+		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch orders"})
 		}
-		orders = make([]interface{}, len(clientOrders))
-		for i, order := range clientOrders {
-			orders[i] = order
+		for _, v := range o {
+			result = append(result, v)
 		}
-
-	case "cook":
-		// Cooks can see all orders to prepare them
-		allOrders, fetchErr := repository.GetAllOrders()
-		if fetchErr != nil {
-			log.Printf("[ORDER] Failed to fetch orders for cook: %v", fetchErr)
+	case "cook", "admin":
+		o, err := repository.GetAllOrders()
+		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch orders"})
 		}
-		orders = make([]interface{}, len(allOrders))
-		for i, order := range allOrders {
-			orders[i] = order
+		for _, v := range o {
+			result = append(result, v)
 		}
-
-		case "delivery":
-		// Delivery can see orders that are confirmed, preparing (to plan ahead) and ready (for pickup)
-		log.Printf("[ORDER] Delivery user %s fetching orders for delivery", userID)
-		confirmedOrders, fetchErr0 := repository.GetOrdersByStatus("confirmed")
-		preparingOrders, fetchErr1 := repository.GetOrdersByStatus("preparing")
-		readyOrders, fetchErr2 := repository.GetOrdersByStatus("ready")
-		
-		if fetchErr0 != nil {
-			log.Printf("[ORDER] Failed to fetch confirmed orders for delivery: %v", fetchErr0)
-			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch confirmed orders"})
+	case "delivery":
+		for _, s := range []model.OrderStatus{model.StatusConfirmed, model.StatusPreparing, model.StatusReady} {
+			o, err := repository.GetOrdersByStatus(string(s))
+			if err != nil {
+				return c.Status(500).JSON(fiber.Map{"error": "Could not fetch orders"})
+			}
+			for _, v := range o {
+				result = append(result, v)
+			}
 		}
-		if fetchErr1 != nil {
-			log.Printf("[ORDER] Failed to fetch preparing orders for delivery: %v", fetchErr1)
-			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch preparing orders"})
-		}
-		if fetchErr2 != nil {
-			log.Printf("[ORDER] Failed to fetch ready orders for delivery: %v", fetchErr2)
-			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch ready orders"})
-		}
-		
-		// Combine confirmed, preparing and ready orders
-		allDeliveryOrders := append(confirmedOrders, preparingOrders...)
-		allDeliveryOrders = append(allDeliveryOrders, readyOrders...)
-		orders = make([]interface{}, len(allDeliveryOrders))
-		for i, order := range allDeliveryOrders {
-			orders[i] = order
-		}
-		
-		log.Printf("[ORDER] Delivery user %s can see %d confirmed orders, %d preparing orders and %d ready orders", 
-			userID, len(confirmedOrders), len(preparingOrders), len(readyOrders))
-
-	case "admin":
-		allOrders, fetchErr := repository.GetAllOrders()
-		if fetchErr != nil {
-			log.Printf("[ORDER] Failed to fetch all orders for admin: %v", fetchErr)
-			return c.Status(500).JSON(fiber.Map{"error": "Could not fetch orders"})
-		}
-		orders = make([]interface{}, len(allOrders))
-		for i, order := range allOrders {
-			orders[i] = order
-		}
-
 	default:
-		log.Printf("[ORDER] Invalid user role: %s", userRole)
 		return c.Status(403).JSON(fiber.Map{"error": "Invalid user role"})
 	}
-
-	log.Printf("[ORDER] Found %d orders for user %s", len(orders), userID)
-	return c.JSON(fiber.Map{
-		"orders": orders,
-		"count":  len(orders),
-	})
+	return c.JSON(fiber.Map{"orders": result, "count": len(result)})
 }
 
 func GetOrderById(c *fiber.Ctx) error {
-	orderID := c.Params("id")
+	id := c.Params("id")
 	userID := c.Locals("userID").(string)
-	userRole := c.Locals("userRole").(string)
+	role := c.Locals("userRole").(string)
 
-	log.Printf("[ORDER] User %s (role: %s) requesting order %s", userID, userRole, orderID)
-
-	order, err := repository.GetOrderById(orderID)
+	o, err := repository.GetOrderById(id)
 	if err != nil {
-		log.Printf("[ORDER] Order %s not found: %v", orderID, err)
 		return c.Status(404).JSON(fiber.Map{"error": "Order not found"})
 	}
-
-	// Authorization check
-	switch userRole {
-	case "client":
-		if order.UserID != userID {
-			log.Printf("[ORDER] Client %s attempted to access order %s belonging to %s", userID, orderID, order.UserID)
-			return c.Status(403).JSON(fiber.Map{"error": "Access denied"})
-		}
-	case "admin", "cook", "delivery":
-		// These roles can access any order
-		break
-	default:
-		return c.Status(403).JSON(fiber.Map{"error": "Invalid user role"})
+	if role == "client" && o.UserID != userID {
+		return c.Status(403).JSON(fiber.Map{"error": "Access denied"})
 	}
-
-	return c.JSON(order)
+	return c.JSON(o)
 }
 
 func UpdateOrderStatus(c *fiber.Ctx) error {
-	orderID := c.Params("id")
-	userID := c.Locals("userID").(string)
-	userRole := c.Locals("userRole").(string)
-
-	type request struct {
-		Status string `json:"status"`
-	}
-
-	var body request
+	id := c.Params("id")
+	var body struct{ Status string `json:"status"` }
 	if err := c.BodyParser(&body); err != nil {
-		log.Printf("[ORDER] Invalid request body for status update: %v", err)
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid input"})
 	}
-
-	// Validate status
-	validStatuses := []string{"pending", "confirmed", "preparing", "ready", "delivered", "cancelled"}
-	isValidStatus := false
-	for _, validStatus := range validStatuses {
-		if body.Status == validStatus {
-			isValidStatus = true
-			break
-		}
+	if !model.IsValidStatus(body.Status) {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid status"})
 	}
-
-	if !isValidStatus {
-		return c.Status(400).JSON(fiber.Map{
-			"error": "Invalid status. Valid statuses: pending, confirmed, preparing, ready, delivered, cancelled",
-		})
-	}
-
-	log.Printf("[ORDER] User %s (role: %s) updating order %s status to %s", userID, userRole, orderID, body.Status)
-
-	// Check if order exists first
-	_, err := repository.GetOrderById(orderID)
-	if err != nil {
-		log.Printf("[ORDER] Order %s not found for status update: %v", orderID, err)
+	if _, err := repository.GetOrderById(id); err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "Order not found"})
 	}
-
-	// Update status using service (which will handle database + events)
-	err = service.UpdateOrderStatus(orderID, body.Status)
-	if err != nil {
-		log.Printf("[ORDER] Failed to update order %s status: %v", orderID, err)
-		return c.Status(500).JSON(fiber.Map{"error": "Failed to update order status"})
+	if err := service.UpdateOrderStatus(id, model.OrderStatus(body.Status)); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to update status"})
 	}
-
-	log.Printf("[ORDER] Order %s status updated to %s by user %s", orderID, body.Status, userID)
-	return c.JSON(fiber.Map{
-		"message":  "Order status updated successfully",
-		"order_id": orderID,
-		"status":   body.Status,
-	})
+	return c.JSON(fiber.Map{"order_id": id, "status": body.Status})
 }
 
 func GetAllOrders(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
-	log.Printf("[ADMIN] Admin %s requesting all orders", userID)
-
-	orders, err := repository.GetAllOrders()
+	o, err := repository.GetAllOrders()
 	if err != nil {
-		log.Printf("[ADMIN] Failed to fetch all orders: %v", err)
 		return c.Status(500).JSON(fiber.Map{"error": "Could not fetch orders"})
 	}
-
-	log.Printf("[ADMIN] Retrieved %d orders for admin %s", len(orders), userID)
-	return c.JSON(fiber.Map{
-		"orders": orders,
-		"count":  len(orders),
-	})
+	return c.JSON(fiber.Map{"orders": o, "count": len(o)})
 }
 
 func GetOrderStats(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
-	log.Printf("[ADMIN] Admin %s requesting order statistics", userID)
-
 	stats, err := repository.GetOrderStatistics()
 	if err != nil {
-		log.Printf("[ADMIN] Failed to fetch order statistics: %v", err)
 		return c.Status(500).JSON(fiber.Map{"error": "Could not fetch statistics"})
 	}
-
 	return c.JSON(stats)
 }
